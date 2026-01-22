@@ -1,0 +1,40 @@
+# Git
+.git
+.gitignore
+
+# Environment files with secrets
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+.venv/
+env/
+*.egg-info/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Uploads and exports (use volumes instead)
+backend/uploads/*
+backend/exports/*
+
+# Documentation
+*.md
+!README.md
+
+# Docker files (don't need to copy themselves)
+Dockerfile
+docker-compose.yml
+.dockerignore
