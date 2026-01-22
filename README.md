@@ -1,16 +1,17 @@
 # Bill Matcher - Profit/Loss Calculator
 
-A web application that uses NVIDIA NIM's OCR capabilities to extract data from purchase and sale bills, match items, and calculate profit/loss.
+A web application that uses NVIDIA NIM's Vision-Language Model to extract data from purchase and sale bills, match items, and calculate profit/loss.
 
 ## 🚀 Features
 
-- **OCR Bill Processing**: Uses NVIDIA Nemotron-Parse API for accurate text extraction from bill images
+- **AI Bill Processing**: Uses NVIDIA Nemotron VLM for intelligent text extraction from bill images
 - **Multi-format Support**: Accepts JPG, PNG, and PDF files
 - **Smart Item Matching**: Matches purchase and sale items using serial numbers, HSN codes, and item names
 - **Profit/Loss Calculation**: Automatically calculates profit/loss for each matched item
 - **Excel Export**: Export results to professionally formatted Excel files
 - **Manual Editing**: Add, edit, or delete items before matching
 - **Responsive UI**: Works on desktop and mobile devices
+- **Docker Support**: Easy deployment with Docker Compose
 
 ## 📁 Project Structure
 
@@ -18,7 +19,7 @@ A web application that uses NVIDIA NIM's OCR capabilities to extract data from p
 bill_software/
 ├── backend/
 │   ├── app.py                 # Flask API server
-│   ├── nvidia_nim_service.py  # NVIDIA NIM OCR integration
+│   ├── nvidia_nim_service.py  # NVIDIA NIM VLM integration
 │   ├── bill_processor.py      # Bill text parsing logic
 │   ├── matcher.py             # Item matching & profit calculation
 │   ├── pdf_processor.py       # PDF to image conversion
@@ -27,23 +28,119 @@ bill_software/
 │   ├── index.html             # Main HTML page
 │   ├── styles.css             # Styling
 │   └── app.js                 # Frontend JavaScript
+├── Dockerfile                 # Backend Docker image
+├── docker-compose.yml         # Multi-container orchestration
+├── nginx.conf                 # Nginx configuration for frontend
+├── .dockerignore              # Docker build exclusions
+├── .gitignore                 # Git exclusions
 ├── requirements.txt           # Python dependencies
 ├── .env.example               # Environment variables template
 └── README.md                  # This file
 ```
 
-## 🛠️ Installation
+---
+
+## 🐳 Docker Setup (Recommended)
+
+The easiest way to run the application is with Docker.
+
+### Prerequisites
+
+- [Docker](https://docs.docker.com/get-docker/)
+- [Docker Compose](https://docs.docker.com/compose/install/)
+- NVIDIA API Key (get one from [NVIDIA NGC](https://build.nvidia.com/))
+
+### Quick Start
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/Comptech-Enterprises/bill_matcher_ai.git
+   cd bill_matcher_ai
+   ```
+
+2. **Set your NVIDIA API key**
+
+   **Option A: Create .env file**
+   ```bash
+   cp .env.example .env
+   # Edit .env and add your API key
+   ```
+
+   **Option B: Set environment variable**
+   ```bash
+   # Windows PowerShell
+   $env:NVIDIA_API_KEY="nvapi-your-key-here"
+
+   # Linux/Mac
+   export NVIDIA_API_KEY="nvapi-your-key-here"
+   ```
+
+3. **Build and run**
+   ```bash
+   docker-compose up --build
+   ```
+
+4. **Access the application**
+   
+   Open [http://localhost:8080](http://localhost:8080) in your browser
+
+### Docker Architecture
+
+```
+┌─────────────────────────────────────────┐
+│       http://localhost:8080             │
+├─────────────────┬───────────────────────┤
+│   Nginx         │   Flask Backend       │
+│   (Frontend)    │   (Python API)        │
+│   Port: 8080    │   Port: 5000          │
+│                 │                       │
+│   Serves HTML   │   NVIDIA NIM API      │
+│   Proxies /api  │   OCR Processing      │
+└─────────────────┴───────────────────────┘
+```
+
+### Docker Commands
+
+```bash
+# Build and start containers
+docker-compose up --build
+
+# Run in background (detached mode)
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# View backend logs only
+docker-compose logs -f backend
+
+# Stop containers
+docker-compose down
+
+# Stop and remove volumes (clean slate)
+docker-compose down -v
+
+# Rebuild after code changes
+docker-compose up --build
+```
+
+---
+
+## 🛠️ Local Development Setup
+
+For development without Docker.
 
 ### Prerequisites
 
 - Python 3.8 or higher
-- NVIDIA API Key (get one from [NVIDIA NGC](https://ngc.nvidia.com/))
+- NVIDIA API Key (get one from [NVIDIA NGC](https://build.nvidia.com/))
 
 ### Setup
 
 1. **Clone the repository**
    ```bash
-   cd bill_software
+   git clone https://github.com/Comptech-Enterprises/bill_matcher_ai.git
+   cd bill_matcher_ai
    ```
 
 2. **Create virtual environment**
@@ -72,35 +169,43 @@ bill_software/
    SECRET_KEY=your_secret_key_here
    ```
 
-## 🚀 Running the Application
+5. **Update frontend API URL** (for local dev)
+   
+   Edit `frontend/app.js` and change:
+   ```javascript
+   const API_BASE_URL = '/api';
+   ```
+   to:
+   ```javascript
+   const API_BASE_URL = 'http://localhost:5000/api';
+   ```
 
-### Start the Backend Server
+### Running Locally
 
+**Start the Backend Server:**
 ```bash
 cd backend
 python app.py
 ```
-
 The API server will start at `http://localhost:5000`
 
-### Open the Frontend
+**Open the Frontend:**
 
-Open `frontend/index.html` in your web browser, or serve it with a simple HTTP server:
-
+Open `frontend/index.html` directly in your browser, or serve with a simple HTTP server:
 ```bash
-# Using Python
 cd frontend
 python -m http.server 8080
-
-# Then open http://localhost:8080 in your browser
 ```
+Then open http://localhost:8080
+
+---
 
 ## 📖 Usage
 
 ### Step 1: Upload Bills
 1. Upload purchase bills (invoices showing items you bought)
 2. Upload sale bills (invoices showing items you sold)
-3. Click "Process Bills" to extract item data using OCR
+3. Click "Process Bills" to extract item data using AI
 
 ### Step 2: Review Items
 1. Review extracted items from both purchase and sale bills
@@ -113,6 +218,8 @@ python -m http.server 8080
 2. View matched items with profit/loss calculations
 3. Check unmatched purchases and sales
 4. Export results to Excel
+
+---
 
 ## 🔌 API Endpoints
 
@@ -129,6 +236,8 @@ python -m http.server 8080
 | `/api/items/delete` | POST | Delete item |
 | `/api/session/<id>` | DELETE | Delete session |
 
+---
+
 ## 🧠 Matching Algorithm
 
 Items are matched using a weighted scoring system:
@@ -140,6 +249,8 @@ Items are matched using a weighted scoring system:
 | Item Name | 20% | Fuzzy matching of item names |
 
 Items with a match score ≥ 70% are considered matches.
+
+---
 
 ## 📊 Excel Export
 
@@ -159,6 +270,8 @@ The exported Excel file contains:
 
 4. **Unmatched Sales Sheet**: Items without purchase records
 
+---
+
 ## ⚙️ Configuration
 
 Environment variables (`.env` file):
@@ -171,21 +284,41 @@ Environment variables (`.env` file):
 | `EXPORT_FOLDER` | Folder for exported files | `exports` |
 | `MAX_FILE_SIZE` | Maximum file size (bytes) | `16777216` (16MB) |
 
+---
+
 ## 🔧 Troubleshooting
 
 ### "Failed to create session" error
 - Ensure the backend server is running on port 5000
-- Check for CORS issues if using a different frontend port
+- For Docker: check if containers are running (`docker-compose ps`)
+- Check for CORS issues if using different ports
 
 ### OCR not extracting text correctly
 - Ensure images are clear and well-lit
 - Try higher resolution images
-- For PDFs, check if they're scanned or text-based
+- For PDFs, check if they're scanned properly
 
 ### Items not matching
 - Check if serial numbers are consistent across bills
 - Verify HSN codes are correct
 - Item names should be similar (not case-sensitive)
+
+### Docker issues
+```bash
+# Check container status
+docker-compose ps
+
+# View logs for errors
+docker-compose logs backend
+
+# Restart containers
+docker-compose restart
+
+# Full rebuild
+docker-compose down && docker-compose up --build
+```
+
+---
 
 ## 📝 License
 
@@ -194,3 +327,8 @@ MIT License - feel free to use for personal or commercial projects.
 ## 🤝 Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
+
+## 🔗 Links
+
+- **GitHub**: [https://github.com/Comptech-Enterprises/bill_matcher_ai](https://github.com/Comptech-Enterprises/bill_matcher_ai)
+- **NVIDIA NIM**: [https://build.nvidia.com/](https://build.nvidia.com/)
