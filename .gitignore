@@ -1,0 +1,26 @@
+# In your project folder, create .gitignore with:
+
+# Environment files (contains API keys!)
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+.venv/
+env/
+
+# Upload/Export folders
+backend/uploads/
+backend/exports/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db

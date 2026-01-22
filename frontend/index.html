@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bill Matcher - Profit/Loss Calculator</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📊 Bill Matcher</h1>
+            <p class="subtitle">Upload purchase & sale bills to calculate profit/loss</p>
+        </header>
+
+        <!-- Session Status -->
+        <div id="session-status" class="session-status hidden">
+            <span class="status-dot"></span>
+            <span id="session-id-display">Session: Not Started</span>
+        </div>
+
+        <!-- Step Indicator -->
+        <div class="steps">
+            <div class="step active" data-step="1">
+                <div class="step-number">1</div>
+                <span>Upload Bills</span>
+            </div>
+            <div class="step" data-step="2">
+                <div class="step-number">2</div>
+                <span>Review Items</span>
+            </div>
+            <div class="step" data-step="3">
+                <div class="step-number">3</div>
+                <span>Match & Results</span>
+            </div>
+        </div>
+
+        <!-- Step 1: Upload Bills -->
+        <section id="step-1" class="step-content active">
+            <div class="upload-section">
+                <div class="upload-box" id="purchase-upload">
+                    <div class="upload-icon">📥</div>
+                    <h3>Purchase Bills</h3>
+                    <p>Upload purchase invoices</p>
+                    <input type="file" id="purchase-file" accept=".jpg,.jpeg,.png,.pdf" multiple>
+                    <label for="purchase-file" class="upload-btn">Choose Files</label>
+                    <div id="purchase-files-list" class="files-list"></div>
+                </div>
+                
+                <div class="upload-box" id="sale-upload">
+                    <div class="upload-icon">📤</div>
+                    <h3>Sale Bills</h3>
+                    <p>Upload sale invoices</p>
+                    <input type="file" id="sale-file" accept=".jpg,.jpeg,.png,.pdf" multiple>
+                    <label for="sale-file" class="upload-btn">Choose Files</label>
+                    <div id="sale-files-list" class="files-list"></div>
+                </div>
+            </div>
+            
+            <div class="actions">
+                <button id="process-btn" class="btn btn-primary" disabled>
+                    Process Bills →
+                </button>
+            </div>
+        </section>
+
+        <!-- Step 2: Review Items -->
+        <section id="step-2" class="step-content">
+            <div class="items-review">
+                <div class="items-panel">
+                    <h3>📦 Purchase Items <span id="purchase-count" class="count-badge">0</span></h3>
+                    <div id="purchase-items" class="items-list"></div>
+                    <button class="btn btn-secondary btn-small" onclick="addItem('purchase')">+ Add Item</button>
+                </div>
+                
+                <div class="items-panel">
+                    <h3>💰 Sale Items <span id="sale-count" class="count-badge">0</span></h3>
+                    <div id="sale-items" class="items-list"></div>
+                    <button class="btn btn-secondary btn-small" onclick="addItem('sale')">+ Add Item</button>
+                </div>
+            </div>
+            
+            <div class="actions">
+                <button class="btn btn-secondary" onclick="goToStep(1)">← Back</button>
+                <button id="match-btn" class="btn btn-primary">Match Items →</button>
+            </div>
+        </section>
+
+        <!-- Step 3: Results -->
+        <section id="step-3" class="step-content">
+            <!-- Summary Cards -->
+            <div class="summary-cards">
+                <div class="summary-card">
+                    <div class="card-icon">📊</div>
+                    <div class="card-content">
+                        <span class="card-label">Matched Items</span>
+                        <span id="matched-count" class="card-value">0</span>
+                    </div>
+                </div>
+                <div class="summary-card">
+                    <div class="card-icon">💵</div>
+                    <div class="card-content">
+                        <span class="card-label">Total Purchase</span>
+                        <span id="total-purchase" class="card-value">₹0</span>
+                    </div>
+                </div>
+                <div class="summary-card">
+                    <div class="card-icon">💰</div>
+                    <div class="card-content">
+                        <span class="card-label">Total Sale</span>
+                        <span id="total-sale" class="card-value">₹0</span>
+                    </div>
+                </div>
+                <div class="summary-card profit-card" id="profit-loss-card">
+                    <div class="card-icon">📈</div>
+                    <div class="card-content">
+                        <span class="card-label">Profit/Loss</span>
+                        <span id="total-profit-loss" class="card-value">₹0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Results Tabs -->
+            <div class="results-tabs">
+                <button class="tab-btn active" data-tab="matched">Matched Items</button>
+                <button class="tab-btn" data-tab="unmatched-purchase">Unmatched Purchases</button>
+                <button class="tab-btn" data-tab="unmatched-sale">Unmatched Sales</button>
+            </div>
+
+            <!-- Results Tables -->
+            <div id="matched-tab" class="tab-content active">
+                <table class="results-table">
+                    <thead>
+                        <tr>
+                            <th>S.No</th>
+                            <th>Serial Number</th>
+                            <th>Item Name</th>
+                            <th>HSN Code</th>
+                            <th>Purchase Price</th>
+                            <th>Sale Price</th>
+                            <th>Profit/Loss</th>
+                            <th>%</th>
+                        </tr>
+                    </thead>
+                    <tbody id="matched-items-table"></tbody>
+                </table>
+            </div>
+
+            <div id="unmatched-purchase-tab" class="tab-content">
+                <table class="results-table">
+                    <thead>
+                        <tr>
+                            <th>S.No</th>
+                            <th>Serial Number</th>
+                            <th>Item Name</th>
+                            <th>HSN Code</th>
+                            <th>Purchase Price</th>
+                        </tr>
+                    </thead>
+                    <tbody id="unmatched-purchase-table"></tbody>
+                </table>
+            </div>
+
+            <div id="unmatched-sale-tab" class="tab-content">
+                <table class="results-table">
+                    <thead>
+                        <tr>
+                            <th>S.No</th>
+                            <th>Serial Number</th>
+                            <th>Item Name</th>
+                            <th>HSN Code</th>
+                            <th>Sale Price</th>
+                        </tr>
+                    </thead>
+                    <tbody id="unmatched-sale-table"></tbody>
+                </table>
+            </div>
+
+            <div class="actions">
+                <button class="btn btn-secondary" onclick="goToStep(2)">← Back</button>
+                <button id="export-btn" class="btn btn-success">📥 Export to Excel</button>
+                <button class="btn btn-primary" onclick="startNewSession()">🔄 New Session</button>
+            </div>
+        </section>
+
+        <!-- Loading Overlay -->
+        <div id="loading-overlay" class="loading-overlay hidden">
+            <div class="loading-spinner"></div>
+            <p id="loading-message">Processing...</p>
+        </div>
+
+        <!-- Toast Notifications -->
+        <div id="toast-container" class="toast-container"></div>
+    </div>
+
+    <!-- Add Item Modal -->
+    <div id="add-item-modal" class="modal hidden">
+        <div class="modal-content">
+            <h3>Add New Item</h3>
+            <form id="add-item-form">
+                <input type="hidden" id="modal-item-type">
+                <div class="form-group">
+                    <label>Serial Number</label>
+                    <input type="text" id="modal-serial" placeholder="e.g., SN12345">
+                </div>
+                <div class="form-group">
+                    <label>Item Name *</label>
+                    <input type="text" id="modal-name" placeholder="e.g., Samsung TV" required>
+                </div>
+                <div class="form-group">
+                    <label>HSN Code</label>
+                    <input type="text" id="modal-hsn" placeholder="e.g., 85287100">
+                </div>
+                <div class="form-group">
+                    <label>Price *</label>
+                    <input type="number" id="modal-price" placeholder="e.g., 25000" step="0.01" required>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Item</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
