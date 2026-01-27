@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  # Backend API Service
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bill-matcher-backend
+    ports:
+      - "5000:5000"
+    environment:
+      - NVIDIA_API_KEY=${NVIDIA_API_KEY}
+      - SECRET_KEY=${SECRET_KEY:-docker-secret-key}
+      - FLASK_ENV=production
+      - UPLOAD_FOLDER=uploads
+      - EXPORT_FOLDER=exports
+    volumes:
+      - uploads_data:/app/backend/uploads
+      - exports_data:/app/backend/exports
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Frontend Web Server
+  frontend:
+    image: nginx:alpine
+    container_name: bill-matcher-frontend
+    ports:
+      - "8080:80"
+    volumes:
+      - ./frontend:/usr/share/nginx/html:ro
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  uploads_data:
+  exports_data:
