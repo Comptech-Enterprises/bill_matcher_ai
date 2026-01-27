@@ -1,7 +1,7 @@
 // Bill Matcher Application JavaScript
 
 // Use relative URL for Docker (nginx proxies /api to backend)
-// For local dev without Docker, use 'http://localhost:5000/api'
+// For local dev without Docker, change to 'http://localhost:5000/api'
 const API_BASE_URL = 'http://localhost:5000/api';
 
 // Application State
