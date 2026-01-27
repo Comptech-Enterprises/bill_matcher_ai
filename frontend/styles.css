@@ -99,10 +99,22 @@ header {
 }
 
 .header-left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.header-logo {
+    height: 100px;
+    width: auto;
+    object-fit: contain;
+}
+
+.header-text {
     text-align: left;
 }
 
-.header-left h1 {
+.header-text h1 {
     font-size: 2rem;
     color: var(--primary-color);
     margin-bottom: 0.25rem;
