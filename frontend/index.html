@@ -7,190 +7,236 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>📊 Bill Matcher</h1>
-            <p class="subtitle">Upload purchase & sale bills to calculate profit/loss</p>
-        </header>
-
-        <!-- Session Status -->
-        <div id="session-status" class="session-status hidden">
-            <span class="status-dot"></span>
-            <span id="session-id-display">Session: Not Started</span>
+    <!-- Login Page -->
+    <div id="login-page" class="login-page">
+        <div class="login-container">
+            <div class="login-header">
+                <h1>📊 Bill Matcher</h1>
+                <p>Login to continue</p>
+            </div>
+            <form id="login-form" class="login-form">
+                <div class="form-group">
+                    <label for="login-username">Username</label>
+                    <input type="text" id="login-username" placeholder="Enter username" required autocomplete="username">
+                </div>
+                <div class="form-group">
+                    <label for="login-password">Password</label>
+                    <div class="password-input-wrapper">
+                        <input type="password" id="login-password" placeholder="Enter password" required autocomplete="current-password">
+                        <button type="button" class="password-toggle" onclick="togglePassword('login-password', this)">👁️</button>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary btn-full">Login</button>
+                <p id="login-error" class="error-message hidden"></p>
+            </form>
         </div>
+    </div>
 
-        <!-- Step Indicator -->
-        <div class="steps">
-            <div class="step active" data-step="1">
-                <div class="step-number">1</div>
-                <span>Upload Bills</span>
-            </div>
-            <div class="step" data-step="2">
-                <div class="step-number">2</div>
-                <span>Review Items</span>
-            </div>
-            <div class="step" data-step="3">
-                <div class="step-number">3</div>
-                <span>Match & Results</span>
-            </div>
-        </div>
+    <!-- Main Application -->
+    <div id="main-app" class="hidden">
+        <div class="container">
+            <header>
+                <div class="header-content">
+                    <div class="header-left">
+                        <h1>📊 Bill Matcher</h1>
+                        <p class="subtitle">Upload purchase & sale bills to calculate profit/loss</p>
+                    </div>
+                    <div class="header-right">
+                        <div class="user-menu">
+                            <button id="user-menu-btn" class="user-menu-btn">
+                                <span id="user-display-name">User</span>
+                                <span class="dropdown-arrow">▼</span>
+                            </button>
+                            <div id="user-dropdown" class="user-dropdown hidden">
+                                <a href="#" id="change-password-link" class="dropdown-item">🔒 Change Password</a>
+                                <a href="#" id="admin-panel-link" class="dropdown-item admin-only hidden">👥 User Management</a>
+                                <hr class="dropdown-divider">
+                                <a href="#" id="logout-link" class="dropdown-item">🚪 Logout</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
 
-        <!-- Step 1: Upload Bills -->
-        <section id="step-1" class="step-content active">
-            <div class="upload-section">
-                <div class="upload-box" id="purchase-upload">
-                    <div class="upload-icon">📥</div>
-                    <h3>Purchase Bills</h3>
-                    <p>Upload purchase invoices</p>
-                    <input type="file" id="purchase-file" accept=".jpg,.jpeg,.png,.pdf" multiple>
-                    <label for="purchase-file" class="upload-btn">Choose Files</label>
-                    <div id="purchase-files-list" class="files-list"></div>
+            <!-- Session Status -->
+            <div id="session-status" class="session-status hidden">
+                <span class="status-dot"></span>
+                <span id="session-id-display">Session: Not Started</span>
+            </div>
+
+            <!-- Step Indicator -->
+            <div class="steps">
+                <div class="step active" data-step="1">
+                    <div class="step-number">1</div>
+                    <span>Upload Bills</span>
+                </div>
+                <div class="step" data-step="2">
+                    <div class="step-number">2</div>
+                    <span>Review Items</span>
+                </div>
+                <div class="step" data-step="3">
+                    <div class="step-number">3</div>
+                    <span>Match & Results</span>
+                </div>
+            </div>
+
+            <!-- Step 1: Upload Bills -->
+            <section id="step-1" class="step-content active">
+                <div class="upload-section">
+                    <div class="upload-box" id="purchase-upload">
+                        <div class="upload-icon">📥</div>
+                        <h3>Purchase Bills</h3>
+                        <p>Upload purchase invoices</p>
+                        <input type="file" id="purchase-file" accept=".jpg,.jpeg,.png,.pdf" multiple>
+                        <label for="purchase-file" class="upload-btn">Choose Files</label>
+                        <div id="purchase-files-list" class="files-list"></div>
+                    </div>
+                    
+                    <div class="upload-box" id="sale-upload">
+                        <div class="upload-icon">📤</div>
+                        <h3>Sale Bills</h3>
+                        <p>Upload sale invoices</p>
+                        <input type="file" id="sale-file" accept=".jpg,.jpeg,.png,.pdf" multiple>
+                        <label for="sale-file" class="upload-btn">Choose Files</label>
+                        <div id="sale-files-list" class="files-list"></div>
+                    </div>
                 </div>
                 
-                <div class="upload-box" id="sale-upload">
-                    <div class="upload-icon">📤</div>
-                    <h3>Sale Bills</h3>
-                    <p>Upload sale invoices</p>
-                    <input type="file" id="sale-file" accept=".jpg,.jpeg,.png,.pdf" multiple>
-                    <label for="sale-file" class="upload-btn">Choose Files</label>
-                    <div id="sale-files-list" class="files-list"></div>
+                <div class="actions">
+                    <button id="process-btn" class="btn btn-primary" disabled>
+                        Process Bills →
+                    </button>
                 </div>
-            </div>
-            
-            <div class="actions">
-                <button id="process-btn" class="btn btn-primary" disabled>
-                    Process Bills →
-                </button>
-            </div>
-        </section>
+            </section>
 
-        <!-- Step 2: Review Items -->
-        <section id="step-2" class="step-content">
-            <div class="items-review">
-                <div class="items-panel">
-                    <h3>📦 Purchase Items <span id="purchase-count" class="count-badge">0</span></h3>
-                    <div id="purchase-items" class="items-list"></div>
-                    <button class="btn btn-secondary btn-small" onclick="addItem('purchase')">+ Add Item</button>
+            <!-- Step 2: Review Items -->
+            <section id="step-2" class="step-content">
+                <div class="items-review">
+                    <div class="items-panel">
+                        <h3>📦 Purchase Items <span id="purchase-count" class="count-badge">0</span></h3>
+                        <div id="purchase-items" class="items-list"></div>
+                        <button class="btn btn-secondary btn-small" onclick="addItem('purchase')">+ Add Item</button>
+                    </div>
+                    
+                    <div class="items-panel">
+                        <h3>💰 Sale Items <span id="sale-count" class="count-badge">0</span></h3>
+                        <div id="sale-items" class="items-list"></div>
+                        <button class="btn btn-secondary btn-small" onclick="addItem('sale')">+ Add Item</button>
+                    </div>
                 </div>
                 
-                <div class="items-panel">
-                    <h3>💰 Sale Items <span id="sale-count" class="count-badge">0</span></h3>
-                    <div id="sale-items" class="items-list"></div>
-                    <button class="btn btn-secondary btn-small" onclick="addItem('sale')">+ Add Item</button>
+                <div class="actions">
+                    <button class="btn btn-secondary" onclick="goToStep(1)">← Back</button>
+                    <button id="match-btn" class="btn btn-primary">Match Items →</button>
                 </div>
-            </div>
-            
-            <div class="actions">
-                <button class="btn btn-secondary" onclick="goToStep(1)">← Back</button>
-                <button id="match-btn" class="btn btn-primary">Match Items →</button>
-            </div>
-        </section>
+            </section>
 
-        <!-- Step 3: Results -->
-        <section id="step-3" class="step-content">
-            <!-- Summary Cards -->
-            <div class="summary-cards">
-                <div class="summary-card">
-                    <div class="card-icon">📊</div>
-                    <div class="card-content">
-                        <span class="card-label">Matched Items</span>
-                        <span id="matched-count" class="card-value">0</span>
+            <!-- Step 3: Results -->
+            <section id="step-3" class="step-content">
+                <!-- Summary Cards -->
+                <div class="summary-cards">
+                    <div class="summary-card">
+                        <div class="card-icon">📊</div>
+                        <div class="card-content">
+                            <span class="card-label">Matched Items</span>
+                            <span id="matched-count" class="card-value">0</span>
+                        </div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="card-icon">💵</div>
+                        <div class="card-content">
+                            <span class="card-label">Total Purchase</span>
+                            <span id="total-purchase" class="card-value">₹0</span>
+                        </div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="card-icon">💰</div>
+                        <div class="card-content">
+                            <span class="card-label">Total Sale</span>
+                            <span id="total-sale" class="card-value">₹0</span>
+                        </div>
+                    </div>
+                    <div class="summary-card profit-card" id="profit-loss-card">
+                        <div class="card-icon">📈</div>
+                        <div class="card-content">
+                            <span class="card-label">Profit/Loss</span>
+                            <span id="total-profit-loss" class="card-value">₹0</span>
+                        </div>
                     </div>
                 </div>
-                <div class="summary-card">
-                    <div class="card-icon">💵</div>
-                    <div class="card-content">
-                        <span class="card-label">Total Purchase</span>
-                        <span id="total-purchase" class="card-value">₹0</span>
-                    </div>
+
+                <!-- Results Tabs -->
+                <div class="results-tabs">
+                    <button class="tab-btn active" data-tab="matched">Matched Items</button>
+                    <button class="tab-btn" data-tab="unmatched-purchase">Unmatched Purchases</button>
+                    <button class="tab-btn" data-tab="unmatched-sale">Unmatched Sales</button>
                 </div>
-                <div class="summary-card">
-                    <div class="card-icon">💰</div>
-                    <div class="card-content">
-                        <span class="card-label">Total Sale</span>
-                        <span id="total-sale" class="card-value">₹0</span>
-                    </div>
+
+                <!-- Results Tables -->
+                <div id="matched-tab" class="tab-content active">
+                    <table class="results-table">
+                        <thead>
+                            <tr>
+                                <th>S.No</th>
+                                <th>Serial Number</th>
+                                <th>Item Name</th>
+                                <th>HSN Code</th>
+                                <th>Purchase Price</th>
+                                <th>Sale Price</th>
+                                <th>Profit/Loss</th>
+                                <th>%</th>
+                            </tr>
+                        </thead>
+                        <tbody id="matched-items-table"></tbody>
+                    </table>
                 </div>
-                <div class="summary-card profit-card" id="profit-loss-card">
-                    <div class="card-icon">📈</div>
-                    <div class="card-content">
-                        <span class="card-label">Profit/Loss</span>
-                        <span id="total-profit-loss" class="card-value">₹0</span>
-                    </div>
+
+                <div id="unmatched-purchase-tab" class="tab-content">
+                    <table class="results-table">
+                        <thead>
+                            <tr>
+                                <th>S.No</th>
+                                <th>Serial Number</th>
+                                <th>Item Name</th>
+                                <th>HSN Code</th>
+                                <th>Purchase Price</th>
+                            </tr>
+                        </thead>
+                        <tbody id="unmatched-purchase-table"></tbody>
+                    </table>
                 </div>
+
+                <div id="unmatched-sale-tab" class="tab-content">
+                    <table class="results-table">
+                        <thead>
+                            <tr>
+                                <th>S.No</th>
+                                <th>Serial Number</th>
+                                <th>Item Name</th>
+                                <th>HSN Code</th>
+                                <th>Sale Price</th>
+                            </tr>
+                        </thead>
+                        <tbody id="unmatched-sale-table"></tbody>
+                    </table>
+                </div>
+
+                <div class="actions">
+                    <button class="btn btn-secondary" onclick="goToStep(2)">← Back</button>
+                    <button id="export-btn" class="btn btn-success">📥 Export to Excel</button>
+                    <button class="btn btn-primary" onclick="startNewSession()">🔄 New Session</button>
+                </div>
+            </section>
+
+            <!-- Loading Overlay -->
+            <div id="loading-overlay" class="loading-overlay hidden">
+                <div class="loading-spinner"></div>
+                <p id="loading-message">Processing...</p>
             </div>
 
-            <!-- Results Tabs -->
-            <div class="results-tabs">
-                <button class="tab-btn active" data-tab="matched">Matched Items</button>
-                <button class="tab-btn" data-tab="unmatched-purchase">Unmatched Purchases</button>
-                <button class="tab-btn" data-tab="unmatched-sale">Unmatched Sales</button>
-            </div>
-
-            <!-- Results Tables -->
-            <div id="matched-tab" class="tab-content active">
-                <table class="results-table">
-                    <thead>
-                        <tr>
-                            <th>S.No</th>
-                            <th>Serial Number</th>
-                            <th>Item Name</th>
-                            <th>HSN Code</th>
-                            <th>Purchase Price</th>
-                            <th>Sale Price</th>
-                            <th>Profit/Loss</th>
-                            <th>%</th>
-                        </tr>
-                    </thead>
-                    <tbody id="matched-items-table"></tbody>
-                </table>
-            </div>
-
-            <div id="unmatched-purchase-tab" class="tab-content">
-                <table class="results-table">
-                    <thead>
-                        <tr>
-                            <th>S.No</th>
-                            <th>Serial Number</th>
-                            <th>Item Name</th>
-                            <th>HSN Code</th>
-                            <th>Purchase Price</th>
-                        </tr>
-                    </thead>
-                    <tbody id="unmatched-purchase-table"></tbody>
-                </table>
-            </div>
-
-            <div id="unmatched-sale-tab" class="tab-content">
-                <table class="results-table">
-                    <thead>
-                        <tr>
-                            <th>S.No</th>
-                            <th>Serial Number</th>
-                            <th>Item Name</th>
-                            <th>HSN Code</th>
-                            <th>Sale Price</th>
-                        </tr>
-                    </thead>
-                    <tbody id="unmatched-sale-table"></tbody>
-                </table>
-            </div>
-
-            <div class="actions">
-                <button class="btn btn-secondary" onclick="goToStep(2)">← Back</button>
-                <button id="export-btn" class="btn btn-success">📥 Export to Excel</button>
-                <button class="btn btn-primary" onclick="startNewSession()">🔄 New Session</button>
-            </div>
-        </section>
-
-        <!-- Loading Overlay -->
-        <div id="loading-overlay" class="loading-overlay hidden">
-            <div class="loading-spinner"></div>
-            <p id="loading-message">Processing...</p>
+            <!-- Toast Notifications -->
+            <div id="toast-container" class="toast-container"></div>
         </div>
-
-        <!-- Toast Notifications -->
-        <div id="toast-container" class="toast-container"></div>
     </div>
 
     <!-- Add Item Modal -->
@@ -220,6 +266,104 @@
                     <button type="submit" class="btn btn-primary">Add Item</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Change Password Modal -->
+    <div id="change-password-modal" class="modal hidden">
+        <div class="modal-content">
+            <h3>🔒 Change Password</h3>
+            <form id="change-password-form">
+                <div class="form-group">
+                    <label>Current Password *</label>
+                    <div class="password-input-wrapper">
+                        <input type="password" id="current-password" placeholder="Enter current password" required>
+                        <button type="button" class="password-toggle" onclick="togglePassword('current-password', this)">👁️</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>New Password *</label>
+                    <div class="password-input-wrapper">
+                        <input type="password" id="new-password" placeholder="Enter new password (min 6 chars)" required minlength="6">
+                        <button type="button" class="password-toggle" onclick="togglePassword('new-password', this)">👁️</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Confirm New Password *</label>
+                    <div class="password-input-wrapper">
+                        <input type="password" id="confirm-password" placeholder="Confirm new password" required minlength="6">
+                        <button type="button" class="password-toggle" onclick="togglePassword('confirm-password', this)">👁️</button>
+                    </div>
+                </div>
+                <p id="password-error" class="error-message hidden"></p>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closePasswordModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Change Password</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Admin Panel Modal -->
+    <div id="admin-panel-modal" class="modal hidden">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h3>👥 User Management</h3>
+                <button type="button" class="modal-close" onclick="closeAdminPanel()">×</button>
+            </div>
+            
+            <div class="admin-toolbar">
+                <button class="btn btn-primary" onclick="showAddUserForm()">+ Add User</button>
+            </div>
+            
+            <!-- Add/Edit User Form -->
+            <div id="user-form-container" class="hidden">
+                <form id="user-form" class="user-form">
+                    <input type="hidden" id="edit-user-id">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Username *</label>
+                            <input type="text" id="user-username" placeholder="Enter username (min 3 chars)" required minlength="3">
+                        </div>
+                        <div class="form-group">
+                            <label id="password-label">Password *</label>
+                            <div class="password-input-wrapper">
+                                <input type="password" id="user-password" placeholder="Enter password (min 6 chars)" minlength="6">
+                                <button type="button" class="password-toggle" onclick="togglePassword('user-password', this)">👁️</button>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Role *</label>
+                            <select id="user-role" required>
+                                <option value="user">User</option>
+                                <option value="admin">Admin</option>
+                            </select>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary" id="save-user-btn">Save</button>
+                            <button type="button" class="btn btn-secondary" onclick="cancelUserForm()">Cancel</button>
+                        </div>
+                    </div>
+                    <p id="user-form-error" class="error-message hidden"></p>
+                </form>
+            </div>
+            
+            <!-- Users Table -->
+            <table class="users-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Username</th>
+                        <th>Role</th>
+                        <th>Created</th>
+                        <th>Last Login</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="users-table-body">
+                    <tr><td colspan="6" class="loading-row">Loading users...</td></tr>
+                </tbody>
+            </table>
         </div>
     </div>
 

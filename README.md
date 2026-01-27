@@ -4,6 +4,9 @@ A web application that uses NVIDIA NIM's OCR capabilities to extract data from p
 
 ## 🚀 Features
 
+- **User Authentication**: Secure login system with JWT tokens
+- **Multi-user Support**: Admin can create and manage multiple user accounts
+- **Role-based Access**: Admin and regular user roles
 - **OCR Bill Processing**: Uses NVIDIA Nemotron-Parse API for accurate text extraction from bill images
 - **Multi-format Support**: Accepts JPG, PNG, and PDF files
 - **Smart Item Matching**: Matches purchase and sale items using serial numbers, HSN codes, and item names
@@ -18,11 +21,14 @@ A web application that uses NVIDIA NIM's OCR capabilities to extract data from p
 bill_software/
 ├── backend/
 │   ├── app.py                 # Flask API server
+│   ├── auth.py                # JWT authentication service
+│   ├── database.py            # SQLite database & user model
 │   ├── nvidia_nim_service.py  # NVIDIA NIM OCR integration
 │   ├── bill_processor.py      # Bill text parsing logic
 │   ├── matcher.py             # Item matching & profit calculation
 │   ├── pdf_processor.py       # PDF to image conversion
-│   └── excel_exporter.py      # Excel export functionality
+│   ├── excel_exporter.py      # Excel export functionality
+│   └── bill_matcher.db        # SQLite database (auto-created)
 ├── frontend/
 │   ├── index.html             # Main HTML page
 │   ├── styles.css             # Styling
@@ -95,9 +101,52 @@ python -m http.server 8080
 # Then open http://localhost:8080 in your browser
 ```
 
+## 🔐 Authentication
+
+### Default Admin Account
+
+On first run, a default admin account is created automatically:
+- **Username:** `admin`
+- **Password:** `admin123`
+
+> ⚠️ **Important:** Change the default admin password immediately after first login!
+
+### User Roles
+
+| Role | Permissions |
+|------|------------|
+| **admin** | Full access + user management |
+| **user** | Bill processing only |
+
+### User Management (Admin Only)
+
+1. Click on your username in the top-right corner
+2. Select "User Management"
+3. From here you can:
+   - Add new users
+   - Edit existing users (username, password, role)
+   - Delete users (except yourself)
+
+### Authentication API Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/auth/login` | POST | User login |
+| `/api/auth/me` | GET | Get current user info |
+| `/api/auth/change-password` | POST | Change password |
+| `/api/admin/users` | GET | List all users (admin) |
+| `/api/admin/users` | POST | Create user (admin) |
+| `/api/admin/users/<id>` | PUT | Update user (admin) |
+| `/api/admin/users/<id>` | DELETE | Delete user (admin) |
+
 ## 📖 Usage
 
-### Step 1: Upload Bills
+### Step 1: Login
+1. Open the application in your browser
+2. Login with your credentials (default: admin/admin123)
+3. Change your password if this is your first login
+
+### Step 2: Upload Bills
 1. Upload purchase bills (invoices showing items you bought)
 2. Upload sale bills (invoices showing items you sold)
 3. Click "Process Bills" to extract item data using OCR

@@ -4,6 +4,11 @@ const API_BASE_URL = 'http://localhost:5000/api';
 
 // Application State
 let state = {
+    // Auth state
+    token: localStorage.getItem('auth_token'),
+    user: JSON.parse(localStorage.getItem('user_info') || 'null'),
+    
+    // Session state
     sessionId: null,
     purchaseFiles: [],
     saleFiles: [],
@@ -16,6 +21,33 @@ let state = {
 
 // DOM Elements
 const elements = {
+    // Auth elements
+    loginPage: document.getElementById('login-page'),
+    mainApp: document.getElementById('main-app'),
+    loginForm: document.getElementById('login-form'),
+    loginUsername: document.getElementById('login-username'),
+    loginPassword: document.getElementById('login-password'),
+    loginError: document.getElementById('login-error'),
+    userDisplayName: document.getElementById('user-display-name'),
+    userMenuBtn: document.getElementById('user-menu-btn'),
+    userDropdown: document.getElementById('user-dropdown'),
+    changePasswordLink: document.getElementById('change-password-link'),
+    adminPanelLink: document.getElementById('admin-panel-link'),
+    logoutLink: document.getElementById('logout-link'),
+    
+    // Change password modal
+    changePasswordModal: document.getElementById('change-password-modal'),
+    changePasswordForm: document.getElementById('change-password-form'),
+    passwordError: document.getElementById('password-error'),
+    
+    // Admin panel modal
+    adminPanelModal: document.getElementById('admin-panel-modal'),
+    userFormContainer: document.getElementById('user-form-container'),
+    userForm: document.getElementById('user-form'),
+    usersTableBody: document.getElementById('users-table-body'),
+    userFormError: document.getElementById('user-form-error'),
+    
+    // Main app elements
     sessionStatus: document.getElementById('session-status'),
     sessionIdDisplay: document.getElementById('session-id-display'),
     purchaseFileInput: document.getElementById('purchase-file'),
@@ -35,11 +67,62 @@ const elements = {
 // Initialize Application
 document.addEventListener('DOMContentLoaded', () => {
     initializeEventListeners();
-    createSession();
+    checkAuthState();
 });
+
+// Check if user is authenticated
+function checkAuthState() {
+    if (state.token && state.user) {
+        showMainApp();
+    } else {
+        showLoginPage();
+    }
+}
+
+// Show login page
+function showLoginPage() {
+    elements.loginPage.classList.remove('hidden');
+    elements.mainApp.classList.add('hidden');
+    elements.loginUsername.focus();
+}
+
+// Show main application
+function showMainApp() {
+    elements.loginPage.classList.add('hidden');
+    elements.mainApp.classList.remove('hidden');
+    
+    // Update user display
+    elements.userDisplayName.textContent = state.user.username;
+    
+    // Show/hide admin link based on role
+    if (state.user.role === 'admin') {
+        elements.adminPanelLink.classList.remove('hidden');
+    } else {
+        elements.adminPanelLink.classList.add('hidden');
+    }
+    
+    // Create session
+    createSession();
+}
 
 // Event Listeners
 function initializeEventListeners() {
+    // Auth events
+    elements.loginForm.addEventListener('submit', handleLogin);
+    elements.userMenuBtn.addEventListener('click', toggleUserMenu);
+    elements.changePasswordLink.addEventListener('click', showChangePasswordModal);
+    elements.adminPanelLink.addEventListener('click', showAdminPanel);
+    elements.logoutLink.addEventListener('click', handleLogout);
+    elements.changePasswordForm.addEventListener('submit', handleChangePassword);
+    elements.userForm.addEventListener('submit', handleUserFormSubmit);
+    
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!elements.userMenuBtn.contains(e.target) && !elements.userDropdown.contains(e.target)) {
+            elements.userDropdown.classList.add('hidden');
+        }
+    });
+
     // File inputs
     elements.purchaseFileInput.addEventListener('change', (e) => handleFileSelect(e, 'purchase'));
     elements.saleFileInput.addEventListener('change', (e) => handleFileSelect(e, 'sale'));
@@ -62,10 +145,319 @@ function initializeEventListeners() {
     elements.addItemForm.addEventListener('submit', handleAddItem);
 }
 
-// Session Management
+// ==================== Authentication ====================
+
+async function handleLogin(e) {
+    e.preventDefault();
+    
+    const username = elements.loginUsername.value.trim();
+    const password = elements.loginPassword.value;
+    
+    elements.loginError.classList.add('hidden');
+    
+    try {
+        const response = await fetch(`${API_BASE_URL}/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password })
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(data.error || 'Login failed');
+        }
+        
+        // Store auth data
+        state.token = data.token;
+        state.user = data.user;
+        localStorage.setItem('auth_token', data.token);
+        localStorage.setItem('user_info', JSON.stringify(data.user));
+        
+        // Clear form
+        elements.loginUsername.value = '';
+        elements.loginPassword.value = '';
+        
+        showMainApp();
+        showToast('Login successful!', 'success');
+        
+    } catch (error) {
+        elements.loginError.textContent = error.message;
+        elements.loginError.classList.remove('hidden');
+    }
+}
+
+function handleLogout(e) {
+    e.preventDefault();
+    
+    // Clear auth data
+    state.token = null;
+    state.user = null;
+    state.sessionId = null;
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('user_info');
+    
+    // Reset state
+    state.purchaseFiles = [];
+    state.saleFiles = [];
+    state.purchaseItems = [];
+    state.saleItems = [];
+    state.matchedResults = null;
+    state.summary = null;
+    state.currentStep = 1;
+    
+    elements.userDropdown.classList.add('hidden');
+    showLoginPage();
+    showToast('Logged out successfully', 'info');
+}
+
+function toggleUserMenu() {
+    elements.userDropdown.classList.toggle('hidden');
+}
+
+// API helper with auth
+async function apiRequest(url, options = {}) {
+    const headers = {
+        ...options.headers
+    };
+    
+    if (state.token) {
+        headers['Authorization'] = `Bearer ${state.token}`;
+    }
+    
+    if (options.body && typeof options.body === 'object' && !(options.body instanceof FormData)) {
+        headers['Content-Type'] = 'application/json';
+        options.body = JSON.stringify(options.body);
+    }
+    
+    const response = await fetch(`${API_BASE_URL}${url}`, {
+        ...options,
+        headers
+    });
+    
+    // Handle auth errors
+    if (response.status === 401) {
+        const data = await response.json();
+        if (data.code === 'INVALID_TOKEN' || data.code === 'NO_TOKEN') {
+            handleLogout({ preventDefault: () => {} });
+            showToast('Session expired. Please login again.', 'warning');
+            throw new Error('Session expired');
+        }
+    }
+    
+    return response;
+}
+
+// ==================== Change Password ====================
+
+function showChangePasswordModal(e) {
+    e.preventDefault();
+    elements.userDropdown.classList.add('hidden');
+    elements.changePasswordModal.classList.remove('hidden');
+    elements.passwordError.classList.add('hidden');
+    document.getElementById('current-password').value = '';
+    document.getElementById('new-password').value = '';
+    document.getElementById('confirm-password').value = '';
+    document.getElementById('current-password').focus();
+}
+
+function closePasswordModal() {
+    elements.changePasswordModal.classList.add('hidden');
+}
+
+async function handleChangePassword(e) {
+    e.preventDefault();
+    
+    const currentPassword = document.getElementById('current-password').value;
+    const newPassword = document.getElementById('new-password').value;
+    const confirmPassword = document.getElementById('confirm-password').value;
+    
+    elements.passwordError.classList.add('hidden');
+    
+    if (newPassword !== confirmPassword) {
+        elements.passwordError.textContent = 'New passwords do not match';
+        elements.passwordError.classList.remove('hidden');
+        return;
+    }
+    
+    try {
+        const response = await apiRequest('/auth/change-password', {
+            method: 'POST',
+            body: { current_password: currentPassword, new_password: newPassword }
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(data.error || 'Failed to change password');
+        }
+        
+        closePasswordModal();
+        showToast('Password changed successfully!', 'success');
+        
+    } catch (error) {
+        elements.passwordError.textContent = error.message;
+        elements.passwordError.classList.remove('hidden');
+    }
+}
+
+// ==================== Admin Panel ====================
+
+function showAdminPanel(e) {
+    e.preventDefault();
+    elements.userDropdown.classList.add('hidden');
+    elements.adminPanelModal.classList.remove('hidden');
+    elements.userFormContainer.classList.add('hidden');
+    loadUsers();
+}
+
+function closeAdminPanel() {
+    elements.adminPanelModal.classList.add('hidden');
+}
+
+async function loadUsers() {
+    elements.usersTableBody.innerHTML = '<tr><td colspan="6" class="loading-row">Loading users...</td></tr>';
+    
+    try {
+        const response = await apiRequest('/admin/users');
+        const data = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(data.error || 'Failed to load users');
+        }
+        
+        renderUsersTable(data.users);
+        
+    } catch (error) {
+        elements.usersTableBody.innerHTML = `<tr><td colspan="6" class="loading-row">Error: ${error.message}</td></tr>`;
+    }
+}
+
+function renderUsersTable(users) {
+    if (users.length === 0) {
+        elements.usersTableBody.innerHTML = '<tr><td colspan="6" class="no-data-row">No users found</td></tr>';
+        return;
+    }
+    
+    elements.usersTableBody.innerHTML = users.map(user => `
+        <tr>
+            <td>${user.id}</td>
+            <td>${user.username}</td>
+            <td><span class="role-badge ${user.role}">${user.role}</span></td>
+            <td>${formatDate(user.created_at)}</td>
+            <td>${user.last_login ? formatDate(user.last_login) : 'Never'}</td>
+            <td class="action-btns">
+                <button class="btn btn-secondary btn-small" onclick="editUser(${user.id}, '${user.username}', '${user.role}')">Edit</button>
+                ${user.id !== state.user.id ? `<button class="btn btn-danger btn-small" onclick="deleteUser(${user.id}, '${user.username}')">Delete</button>` : ''}
+            </td>
+        </tr>
+    `).join('');
+}
+
+function showAddUserForm() {
+    elements.userFormContainer.classList.remove('hidden');
+    document.getElementById('edit-user-id').value = '';
+    document.getElementById('user-username').value = '';
+    document.getElementById('user-password').value = '';
+    document.getElementById('user-password').required = true;
+    document.getElementById('password-label').textContent = 'Password *';
+    document.getElementById('user-role').value = 'user';
+    document.getElementById('save-user-btn').textContent = 'Add User';
+    elements.userFormError.classList.add('hidden');
+    document.getElementById('user-username').focus();
+}
+
+function editUser(id, username, role) {
+    elements.userFormContainer.classList.remove('hidden');
+    document.getElementById('edit-user-id').value = id;
+    document.getElementById('user-username').value = username;
+    document.getElementById('user-password').value = '';
+    document.getElementById('user-password').required = false;
+    document.getElementById('password-label').textContent = 'Password (leave blank to keep current)';
+    document.getElementById('user-role').value = role;
+    document.getElementById('save-user-btn').textContent = 'Update User';
+    elements.userFormError.classList.add('hidden');
+    document.getElementById('user-username').focus();
+}
+
+function cancelUserForm() {
+    elements.userFormContainer.classList.add('hidden');
+    elements.userFormError.classList.add('hidden');
+}
+
+async function handleUserFormSubmit(e) {
+    e.preventDefault();
+    
+    const userId = document.getElementById('edit-user-id').value;
+    const username = document.getElementById('user-username').value.trim();
+    const password = document.getElementById('user-password').value;
+    const role = document.getElementById('user-role').value;
+    
+    elements.userFormError.classList.add('hidden');
+    
+    try {
+        let response;
+        
+        if (userId) {
+            // Update existing user
+            const body = { username, role };
+            if (password) body.password = password;
+            
+            response = await apiRequest(`/admin/users/${userId}`, {
+                method: 'PUT',
+                body
+            });
+        } else {
+            // Create new user
+            response = await apiRequest('/admin/users', {
+                method: 'POST',
+                body: { username, password, role }
+            });
+        }
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(data.error || 'Operation failed');
+        }
+        
+        cancelUserForm();
+        loadUsers();
+        showToast(userId ? 'User updated successfully!' : 'User created successfully!', 'success');
+        
+    } catch (error) {
+        elements.userFormError.textContent = error.message;
+        elements.userFormError.classList.remove('hidden');
+    }
+}
+
+async function deleteUser(id, username) {
+    if (!confirm(`Are you sure you want to delete user "${username}"?`)) return;
+    
+    try {
+        const response = await apiRequest(`/admin/users/${id}`, {
+            method: 'DELETE'
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(data.error || 'Failed to delete user');
+        }
+        
+        loadUsers();
+        showToast('User deleted successfully!', 'success');
+        
+    } catch (error) {
+        showToast(`Error: ${error.message}`, 'error');
+    }
+}
+
+// ==================== Session Management ====================
+
 async function createSession() {
     try {
-        const response = await fetch(`${API_BASE_URL}/session/create`, {
+        const response = await apiRequest('/session/create', {
             method: 'POST'
         });
         const data = await response.json();
@@ -77,23 +469,22 @@ async function createSession() {
             showToast('Session created successfully', 'success');
         }
     } catch (error) {
-        showToast('Failed to create session. Is the server running?', 'error');
-        console.error('Session creation error:', error);
+        if (error.message !== 'Session expired') {
+            showToast('Failed to create session. Is the server running?', 'error');
+            console.error('Session creation error:', error);
+        }
     }
 }
 
 async function startNewSession() {
     // Reset state
-    state = {
-        sessionId: null,
-        purchaseFiles: [],
-        saleFiles: [],
-        purchaseItems: [],
-        saleItems: [],
-        matchedResults: null,
-        summary: null,
-        currentStep: 1
-    };
+    state.purchaseFiles = [];
+    state.saleFiles = [];
+    state.purchaseItems = [];
+    state.saleItems = [];
+    state.matchedResults = null;
+    state.summary = null;
+    state.currentStep = 1;
 
     // Reset UI
     elements.purchaseFilesList.innerHTML = '';
@@ -107,7 +498,8 @@ async function startNewSession() {
     await createSession();
 }
 
-// File Handling
+// ==================== File Handling ====================
+
 function handleFileSelect(event, type) {
     const files = Array.from(event.target.files);
     if (type === 'purchase') {
@@ -144,9 +536,11 @@ function updateProcessButton() {
     elements.processBtn.disabled = state.purchaseFiles.length === 0 && state.saleFiles.length === 0;
 }
 
-// Drag and Drop
+// ==================== Drag and Drop ====================
+
 function setupDragAndDrop(elementId, type) {
     const element = document.getElementById(elementId);
+    if (!element) return;
     
     ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
         element.addEventListener(eventName, preventDefaults);
@@ -189,7 +583,8 @@ function isValidFile(file) {
     return validTypes.includes(file.type);
 }
 
-// Bill Processing
+// ==================== Bill Processing ====================
+
 async function processBills() {
     if (!state.sessionId) {
         showToast('No active session. Please refresh the page.', 'error');
@@ -218,8 +613,10 @@ async function processBills() {
 
     } catch (error) {
         hideLoading();
-        showToast(`Error processing bills: ${error.message}`, 'error');
-        console.error('Processing error:', error);
+        if (error.message !== 'Session expired') {
+            showToast(`Error processing bills: ${error.message}`, 'error');
+            console.error('Processing error:', error);
+        }
     }
 }
 
@@ -230,8 +627,17 @@ async function uploadFile(file, type) {
 
     const response = await fetch(`${API_BASE_URL}/upload/${type}`, {
         method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${state.token}`
+        },
         body: formData
     });
+
+    if (response.status === 401) {
+        handleLogout({ preventDefault: () => {} });
+        showToast('Session expired. Please login again.', 'warning');
+        throw new Error('Session expired');
+    }
 
     if (!response.ok) {
         const error = await response.json();
@@ -243,7 +649,7 @@ async function uploadFile(file, type) {
 }
 
 async function fetchSessionData() {
-    const response = await fetch(`${API_BASE_URL}/session/${state.sessionId}`);
+    const response = await apiRequest(`/session/${state.sessionId}`);
     const data = await response.json();
 
     state.purchaseItems = data.purchase_items || [];
@@ -252,7 +658,8 @@ async function fetchSessionData() {
     renderItems();
 }
 
-// Item Rendering
+// ==================== Item Rendering ====================
+
 function renderItems() {
     renderItemsList(state.purchaseItems, 'purchase-items', 'purchase');
     renderItemsList(state.saleItems, 'sale-items', 'sale');
@@ -263,6 +670,8 @@ function renderItems() {
 
 function renderItemsList(items, containerId, type) {
     const container = document.getElementById(containerId);
+    if (!container) return;
+    
     const priceKey = type === 'purchase' ? 'purchase_price' : 'sale_price';
 
     if (items.length === 0) {
@@ -288,7 +697,8 @@ function renderItemsList(items, containerId, type) {
     `).join('');
 }
 
-// Item CRUD Operations
+// ==================== Item CRUD Operations ====================
+
 function addItem(type) {
     document.getElementById('modal-item-type').value = type;
     document.getElementById('modal-serial').value = '';
@@ -312,14 +722,13 @@ async function handleAddItem(e) {
     };
 
     try {
-        const response = await fetch(`${API_BASE_URL}/items/add`, {
+        const response = await apiRequest('/items/add', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
+            body: {
                 session_id: state.sessionId,
                 item_type: type,
                 item: item
-            })
+            }
         });
 
         if (!response.ok) throw new Error('Failed to add item');
@@ -335,7 +744,9 @@ async function handleAddItem(e) {
         showToast('Item added successfully', 'success');
 
     } catch (error) {
-        showToast(`Error adding item: ${error.message}`, 'error');
+        if (error.message !== 'Session expired') {
+            showToast(`Error adding item: ${error.message}`, 'error');
+        }
     }
 }
 
@@ -370,15 +781,14 @@ async function updateItem(type, index) {
     };
 
     try {
-        const response = await fetch(`${API_BASE_URL}/items/update`, {
+        const response = await apiRequest('/items/update', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
+            body: {
                 session_id: state.sessionId,
                 item_type: type,
                 item_index: index,
                 updates: updates
-            })
+            }
         });
 
         if (!response.ok) throw new Error('Failed to update item');
@@ -398,7 +808,9 @@ async function updateItem(type, index) {
         showToast('Item updated successfully', 'success');
 
     } catch (error) {
-        showToast(`Error updating item: ${error.message}`, 'error');
+        if (error.message !== 'Session expired') {
+            showToast(`Error updating item: ${error.message}`, 'error');
+        }
     }
 }
 
@@ -406,14 +818,13 @@ async function deleteItem(type, index) {
     if (!confirm('Are you sure you want to delete this item?')) return;
 
     try {
-        const response = await fetch(`${API_BASE_URL}/items/delete`, {
+        const response = await apiRequest('/items/delete', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
+            body: {
                 session_id: state.sessionId,
                 item_type: type,
                 item_index: index
-            })
+            }
         });
 
         if (!response.ok) throw new Error('Failed to delete item');
@@ -428,7 +839,9 @@ async function deleteItem(type, index) {
         showToast('Item deleted successfully', 'success');
 
     } catch (error) {
-        showToast(`Error deleting item: ${error.message}`, 'error');
+        if (error.message !== 'Session expired') {
+            showToast(`Error deleting item: ${error.message}`, 'error');
+        }
     }
 }
 
@@ -437,7 +850,8 @@ function closeModal() {
     elements.addItemForm.onsubmit = handleAddItem;
 }
 
-// Item Matching
+// ==================== Item Matching ====================
+
 async function matchItems() {
     if (state.purchaseItems.length === 0) {
         showToast('Please add at least one purchase item', 'warning');
@@ -452,10 +866,9 @@ async function matchItems() {
     showLoading('Matching items...');
 
     try {
-        const response = await fetch(`${API_BASE_URL}/match`, {
+        const response = await apiRequest('/match', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ session_id: state.sessionId })
+            body: { session_id: state.sessionId }
         });
 
         if (!response.ok) {
@@ -478,12 +891,15 @@ async function matchItems() {
 
     } catch (error) {
         hideLoading();
-        showToast(`Error matching items: ${error.message}`, 'error');
-        console.error('Matching error:', error);
+        if (error.message !== 'Session expired') {
+            showToast(`Error matching items: ${error.message}`, 'error');
+            console.error('Matching error:', error);
+        }
     }
 }
 
-// Results Rendering
+// ==================== Results Rendering ====================
+
 function renderResults() {
     // Summary cards
     document.getElementById('matched-count').textContent = state.summary.total_matched_items;
@@ -547,7 +963,8 @@ function renderUnmatchedTable(items, tableId, priceKey) {
     `).join('');
 }
 
-// Tab Switching
+// ==================== Tab Switching ====================
+
 function switchTab(tabName) {
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.tab === tabName);
@@ -560,7 +977,8 @@ function switchTab(tabName) {
     document.getElementById(`${tabName}-tab`).classList.add('active');
 }
 
-// Export
+// ==================== Export ====================
+
 async function exportResults() {
     if (!state.sessionId || !state.matchedResults) {
         showToast('No results to export', 'warning');
@@ -570,7 +988,17 @@ async function exportResults() {
     showLoading('Generating Excel file...');
 
     try {
-        const response = await fetch(`${API_BASE_URL}/export/${state.sessionId}`);
+        const response = await fetch(`${API_BASE_URL}/export/${state.sessionId}`, {
+            headers: {
+                'Authorization': `Bearer ${state.token}`
+            }
+        });
+        
+        if (response.status === 401) {
+            handleLogout({ preventDefault: () => {} });
+            showToast('Session expired. Please login again.', 'warning');
+            throw new Error('Session expired');
+        }
         
         if (!response.ok) {
             const error = await response.json();
@@ -592,12 +1020,15 @@ async function exportResults() {
 
     } catch (error) {
         hideLoading();
-        showToast(`Error exporting: ${error.message}`, 'error');
-        console.error('Export error:', error);
+        if (error.message !== 'Session expired') {
+            showToast(`Error exporting: ${error.message}`, 'error');
+            console.error('Export error:', error);
+        }
     }
 }
 
-// Step Navigation
+// ==================== Step Navigation ====================
+
 function goToStep(step) {
     state.currentStep = step;
 
@@ -617,7 +1048,8 @@ function goToStep(step) {
     });
 }
 
-// Loading
+// ==================== Loading ====================
+
 function showLoading(message = 'Processing...') {
     elements.loadingMessage.textContent = message;
     elements.loadingOverlay.classList.remove('hidden');
@@ -627,7 +1059,8 @@ function hideLoading() {
     elements.loadingOverlay.classList.add('hidden');
 }
 
-// Toast Notifications
+// ==================== Toast Notifications ====================
+
 function showToast(message, type = 'info') {
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
@@ -648,7 +1081,8 @@ function showToast(message, type = 'info') {
     }, 3000);
 }
 
-// Utility Functions
+// ==================== Utility Functions ====================
+
 function formatNumber(num) {
     return new Intl.NumberFormat('en-IN', {
         minimumFractionDigits: 2,
@@ -656,7 +1090,39 @@ function formatNumber(num) {
     }).format(num);
 }
 
+function formatDate(dateStr) {
+    if (!dateStr) return 'N/A';
+    try {
+        const date = new Date(dateStr);
+        return date.toLocaleDateString('en-IN', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    } catch (e) {
+        return dateStr;
+    }
+}
+
+// ==================== Password Toggle ====================
+
+function togglePassword(inputId, button) {
+    const input = document.getElementById(inputId);
+    if (input.type === 'password') {
+        input.type = 'text';
+        button.textContent = '🙈';
+        button.title = 'Hide password';
+    } else {
+        input.type = 'password';
+        button.textContent = '👁️';
+        button.title = 'Show password';
+    }
+}
+
 // Make functions available globally
+window.togglePassword = togglePassword;
 window.removeFile = removeFile;
 window.addItem = addItem;
 window.editItem = editItem;
@@ -664,3 +1130,9 @@ window.deleteItem = deleteItem;
 window.closeModal = closeModal;
 window.goToStep = goToStep;
 window.startNewSession = startNewSession;
+window.closePasswordModal = closePasswordModal;
+window.closeAdminPanel = closeAdminPanel;
+window.showAddUserForm = showAddUserForm;
+window.editUser = editUser;
+window.cancelUserForm = cancelUserForm;
+window.deleteUser = deleteUser;
