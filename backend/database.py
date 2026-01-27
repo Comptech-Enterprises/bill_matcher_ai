@@ -178,6 +178,9 @@ class User:
         
         if updates:
             params.append(user_id)
+            # Note: This query uses dynamic column names, but they are controlled
+            # by the function logic (hardcoded 'column = ?' strings), not user input.
+            # User-provided values are safely parameterized in the params list.
             query = f'UPDATE users SET {", ".join(updates)} WHERE id = ?'
             try:
                 cursor.execute(query, params)

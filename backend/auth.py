@@ -1,5 +1,6 @@
 import os
 import jwt
+import logging
 from datetime import datetime, timedelta
 from functools import wraps
 from flask import request, jsonify, g
@@ -10,7 +11,18 @@ from database import User
 load_dotenv()
 
 # JWT Configuration
-JWT_SECRET = os.getenv('JWT_SECRET', 'your-super-secret-jwt-key-change-in-production')
+ENVIRONMENT = os.getenv('FLASK_ENV') or os.getenv('ENV') or 'production'
+JWT_SECRET = os.getenv('JWT_SECRET')
+
+if not JWT_SECRET:
+    if ENVIRONMENT.lower() == 'production':
+        raise RuntimeError(
+            "JWT_SECRET environment variable must be set in production for secure token signing."
+        )
+    logging.warning(
+        "JWT_SECRET is not set; using a non-secure default secret suitable only for development."
+    )
+    JWT_SECRET = 'insecure-development-jwt-secret-change-me'
 JWT_ALGORITHM = 'HS256'
 JWT_EXPIRATION_HOURS = int(os.getenv('JWT_EXPIRATION_HOURS', 24))
 
