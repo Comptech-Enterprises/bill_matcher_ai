@@ -12,6 +12,7 @@ services:
     environment:
       - NVIDIA_API_KEY=${NVIDIA_API_KEY}
       - SECRET_KEY=${SECRET_KEY:-docker-secret-key}
+      - JWT_SECRET=${JWT_SECRET}
       - FLASK_ENV=production
       - UPLOAD_FOLDER=uploads
       - EXPORT_FOLDER=exports
