@@ -177,51 +177,57 @@
 
                 <!-- Results Tables -->
                 <div id="matched-tab" class="tab-content active">
-                    <table class="results-table">
-                        <thead>
-                            <tr>
-                                <th>S.No</th>
-                                <th>Serial Number</th>
-                                <th>Item Name</th>
-                                <th>HSN Code</th>
-                                <th>Purchase Price</th>
-                                <th>Sale Price</th>
-                                <th>Profit/Loss</th>
-                                <th>%</th>
-                            </tr>
-                        </thead>
-                        <tbody id="matched-items-table"></tbody>
-                    </table>
+                    <div class="table-wrapper">
+                        <table class="results-table">
+                            <thead>
+                                <tr>
+                                    <th>S.No</th>
+                                    <th>Serial Number</th>
+                                    <th>Item Name</th>
+                                    <th>HSN Code</th>
+                                    <th>Purchase Price</th>
+                                    <th>Sale Price</th>
+                                    <th>Profit/Loss</th>
+                                    <th>%</th>
+                                </tr>
+                            </thead>
+                            <tbody id="matched-items-table"></tbody>
+                        </table>
+                    </div>
                 </div>
 
                 <div id="unmatched-purchase-tab" class="tab-content">
-                    <table class="results-table">
-                        <thead>
-                            <tr>
-                                <th>S.No</th>
-                                <th>Serial Number</th>
-                                <th>Item Name</th>
-                                <th>HSN Code</th>
-                                <th>Purchase Price</th>
-                            </tr>
-                        </thead>
-                        <tbody id="unmatched-purchase-table"></tbody>
-                    </table>
+                    <div class="table-wrapper">
+                        <table class="results-table">
+                            <thead>
+                                <tr>
+                                    <th>S.No</th>
+                                    <th>Serial Number</th>
+                                    <th>Item Name</th>
+                                    <th>HSN Code</th>
+                                    <th>Purchase Price</th>
+                                </tr>
+                            </thead>
+                            <tbody id="unmatched-purchase-table"></tbody>
+                        </table>
+                    </div>
                 </div>
 
                 <div id="unmatched-sale-tab" class="tab-content">
-                    <table class="results-table">
-                        <thead>
-                            <tr>
-                                <th>S.No</th>
-                                <th>Serial Number</th>
-                                <th>Item Name</th>
-                                <th>HSN Code</th>
-                                <th>Sale Price</th>
-                            </tr>
-                        </thead>
-                        <tbody id="unmatched-sale-table"></tbody>
-                    </table>
+                    <div class="table-wrapper">
+                        <table class="results-table">
+                            <thead>
+                                <tr>
+                                    <th>S.No</th>
+                                    <th>Serial Number</th>
+                                    <th>Item Name</th>
+                                    <th>HSN Code</th>
+                                    <th>Sale Price</th>
+                                </tr>
+                            </thead>
+                            <tbody id="unmatched-sale-table"></tbody>
+                        </table>
+                    </div>
                 </div>
 
                 <div class="actions">
@@ -352,21 +358,23 @@
             </div>
             
             <!-- Users Table -->
-            <table class="users-table">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Username</th>
-                        <th>Role</th>
-                        <th>Created</th>
-                        <th>Last Login</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="users-table-body">
-                    <tr><td colspan="6" class="loading-row">Loading users...</td></tr>
-                </tbody>
-            </table>
+            <div class="table-wrapper">
+                <table class="users-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Username</th>
+                            <th>Role</th>
+                            <th>Created</th>
+                            <th>Last Login</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="users-table-body">
+                        <tr><td colspan="6" class="loading-row">Loading users...</td></tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 
