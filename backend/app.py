@@ -17,7 +17,20 @@ from auth import login_required, admin_required, AuthService, get_current_user
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app)
+
+# CORS Configuration - Allow both local development and production domains
+cors_origins = [
+    'http://localhost:8080',
+    'http://127.0.0.1:8080',
+    'https://bill-matcher-frontend.onrender.com',  # Update this after deploying frontend
+]
+
+# Add custom domain if provided
+custom_frontend = os.getenv('FRONTEND_URL')
+if custom_frontend:
+    cors_origins.append(custom_frontend)
+
+CORS(app, origins=cors_origins, supports_credentials=True)
 
 # Configuration
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key')
@@ -53,6 +66,18 @@ def allowed_file(filename):
 def generate_session_id():
     """Generate unique session ID"""
     return str(uuid.uuid4())
+
+
+# ==================== Health Check ====================
+
+@app.route('/api/health', methods=['GET'])
+def health_check():
+    """Health check endpoint for monitoring"""
+    return jsonify({
+        'status': 'healthy',
+        'service': 'bill-matcher-api',
+        'version': '1.0.0'
+    }), 200
 
 
 # ==================== Authentication Routes ====================
@@ -602,4 +627,11 @@ def server_error(e):
 
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    # Use PORT from environment (Render provides this) or default to 5000
+    port = int(os.getenv('PORT', 5000))
+    debug = os.getenv('FLASK_ENV', 'development') == 'development'
+
+    print(f"Starting Bill Matcher API on port {port}...")
+    print(f"Debug mode: {debug}")
+
+    app.run(debug=debug, host='0.0.0.0', port=port)
