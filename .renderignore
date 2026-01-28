@@ -1,0 +1,47 @@
+# Render Ignore File
+# Files/folders that don't need to be uploaded to Render
+
+# Development files
+.env
+.env.local
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Local uploads/exports (ephemeral on Render)
+backend/uploads/
+backend/exports/
+
+# Database files
+*.db
+*.sqlite
+
+# Logs
+*.log
+
+# Documentation (optional - remove if you want docs deployed)
+README.md
+DEPLOYMENT.md

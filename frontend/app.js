@@ -1,8 +1,9 @@
 // Bill Matcher Application JavaScript
 
-// Use relative URL for Docker (nginx proxies /api to backend)
-// For local dev without Docker, change to 'http://localhost:5000/api'
-const API_BASE_URL = 'http://localhost:5000/api';
+// Auto-detect environment: use localhost for dev, production URL for Render
+const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? 'http://localhost:5000/api'
+    : 'https://bill-matcher-ai.onrender.com/api';
 
 // Application State
 let state = {
