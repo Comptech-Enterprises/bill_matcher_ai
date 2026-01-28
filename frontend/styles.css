@@ -30,9 +30,10 @@ body {
 }
 
 .container {
-    max-width: 1200px;
+    max-width: 1400px;
     margin: 0 auto;
-    padding: 2rem;
+    padding: clamp(1rem, 3vw, 2rem);
+    width: 100%;
 }
 
 /* ==================== Login Page ==================== */
@@ -625,6 +626,12 @@ header {
 }
 
 /* Results Table */
+.table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin-bottom: 1rem;
+}
+
 .results-table {
     width: 100%;
     background: var(--card-bg);
@@ -632,6 +639,7 @@ header {
     overflow: hidden;
     box-shadow: var(--shadow);
     border-collapse: collapse;
+    min-width: 600px;
 }
 
 .results-table th,
@@ -930,6 +938,7 @@ header {
     background: var(--card-bg);
     border-radius: 8px;
     overflow: hidden;
+    min-width: 600px;
 }
 
 .users-table th,
@@ -994,6 +1003,43 @@ header {
 }
 
 /* Responsive */
+/* Large screens (large laptops and desktops) */
+@media (min-width: 1400px) {
+    .container {
+        max-width: 1600px;
+    }
+
+    .summary-cards {
+        grid-template-columns: repeat(4, 1fr);
+    }
+
+    .upload-section {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 3rem;
+    }
+
+    .items-review {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 3rem;
+    }
+}
+
+/* Tablets and small laptops */
+@media (max-width: 1024px) {
+    .container {
+        padding: 1.5rem;
+    }
+
+    .header-logo {
+        height: 80px;
+    }
+
+    .summary-cards {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* Tablets and mobile devices */
 @media (max-width: 768px) {
     .container {
         padding: 1rem;
@@ -1005,11 +1051,31 @@ header {
     }
 
     .header-left {
+        flex-direction: column;
         text-align: center;
     }
 
-    .header-left h1 {
+    .header-logo {
+        height: 70px;
+    }
+
+    .header-text h1 {
         font-size: 1.75rem;
+    }
+
+    /* Better touch targets for mobile (min 44px) */
+    .btn {
+        min-height: 44px;
+        padding: 0.875rem 1.5rem;
+    }
+
+    .btn-small {
+        min-height: 40px;
+        padding: 0.625rem 1rem;
+    }
+
+    .user-menu-btn {
+        min-height: 44px;
     }
 
     .steps {
@@ -1020,8 +1086,15 @@ header {
         display: none;
     }
 
+    .step-number {
+        width: 40px;
+        height: 40px;
+        font-size: 1.1rem;
+    }
+
     .upload-section {
         grid-template-columns: 1fr;
+        gap: 1.5rem;
     }
 
     .items-review {
@@ -1030,6 +1103,19 @@ header {
 
     .summary-cards {
         grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+    }
+
+    .summary-card {
+        padding: 1rem;
+    }
+
+    .summary-card .card-icon {
+        font-size: 2rem;
+    }
+
+    .summary-card .card-value {
+        font-size: 1.25rem;
     }
 
     .results-table {
@@ -1042,12 +1128,23 @@ header {
     }
 
     .results-tabs {
-        flex-wrap: wrap;
+        flex-direction: column;
+        gap: 0.25rem;
     }
 
     .tab-btn {
-        flex: none;
-        width: calc(50% - 0.25rem);
+        width: 100%;
+        text-align: left;
+    }
+
+    .actions {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .actions .btn {
+        width: 100%;
+        justify-content: center;
     }
 
     .modal-content.modal-large {
@@ -1073,20 +1170,79 @@ header {
 
     .users-table .action-btns {
         flex-direction: column;
+        gap: 0.25rem;
+    }
+
+    /* Item cards more compact */
+    .item-card .item-details {
+        grid-template-columns: 1fr;
+    }
+
+    .items-list {
+        max-height: 300px;
     }
 }
 
+/* Small mobile devices */
 @media (max-width: 480px) {
+    .container {
+        padding: 0.75rem;
+    }
+
+    .header-logo {
+        height: 60px;
+    }
+
+    .header-text h1 {
+        font-size: 1.5rem;
+    }
+
+    .subtitle {
+        font-size: 0.875rem;
+    }
+
     .summary-cards {
         grid-template-columns: 1fr;
     }
 
+    .summary-card {
+        padding: 0.875rem;
+    }
+
     .tab-btn {
         width: 100%;
+        font-size: 0.875rem;
     }
 
     .login-container {
         padding: 1.5rem;
+    }
+
+    .login-header h1 {
+        font-size: 1.75rem;
+    }
+
+    .upload-icon {
+        font-size: 2.5rem;
+    }
+
+    .upload-box h3 {
+        font-size: 1.1rem;
+    }
+
+    .modal-content {
+        padding: 1.5rem;
+    }
+
+    .results-table th,
+    .results-table td {
+        padding: 0.5rem 0.25rem;
+        font-size: 0.75rem;
+    }
+
+    .step-number {
+        width: 36px;
+        height: 36px;
     }
 }
 
