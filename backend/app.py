@@ -1,10 +1,21 @@
 import os
 import uuid
 import tempfile
+import requests
+import base64
+from datetime import datetime
 from flask import Flask, request, jsonify, send_file, g
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
+from pathlib import Path
+
+# Load .env from parent directory (project root) or current directory
+env_path = Path(__file__).parent.parent / '.env'
+if env_path.exists():
+    load_dotenv(env_path)
+else:
+    load_dotenv()
 
 from nvidia_nim_service import NvidiaNIMService
 from bill_processor import BillProcessor
@@ -13,8 +24,6 @@ from pdf_processor import PDFProcessor
 from excel_exporter import ExcelExporter
 from database import User, init_db
 from auth import login_required, admin_required, AuthService, get_current_user
-
-load_dotenv()
 
 app = Flask(__name__)
 
@@ -78,6 +87,149 @@ def health_check():
         'service': 'bill-matcher-api',
         'version': '1.0.0'
     }), 200
+
+
+# ==================== Feedback / Issue Reporting ====================
+
+def upload_screenshot_to_github(screenshot_base64, github_token, github_repo):
+    """Upload screenshot to GitHub repo and return the raw URL"""
+    try:
+        # Remove data URL prefix if present
+        if screenshot_base64.startswith('data:'):
+            screenshot_base64 = screenshot_base64.split(',')[1]
+            print(f"[SCREENSHOT] Stripped data URL prefix, new length: {len(screenshot_base64)}")
+
+        # Generate unique filename
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        filename = f"screenshots/feedback_{timestamp}_{uuid.uuid4().hex[:8]}.png"
+        print(f"[SCREENSHOT] Uploading to: {filename}")
+
+        # Upload to GitHub
+        response = requests.put(
+            f'https://api.github.com/repos/{github_repo}/contents/{filename}',
+            headers={
+                'Authorization': f'token {github_token}',
+                'Accept': 'application/vnd.github.v3+json'
+            },
+            json={
+                'message': f'Add feedback screenshot {timestamp}',
+                'content': screenshot_base64,
+                'branch': 'main'
+            },
+            timeout=60
+        )
+
+        print(f"[SCREENSHOT] GitHub API response: {response.status_code}")
+        if response.status_code in [200, 201]:
+            # Return raw GitHub URL for the image
+            url = f"https://raw.githubusercontent.com/{github_repo}/main/{filename}"
+            print(f"[SCREENSHOT] Upload successful: {url}")
+            return url
+        else:
+            print(f"[SCREENSHOT] Upload failed: {response.status_code} - {response.text[:500]}")
+            return None
+    except Exception as e:
+        print(f"[SCREENSHOT] Error uploading: {e}")
+        return None
+
+
+@app.route('/api/feedback', methods=['POST'])
+@login_required
+def submit_feedback():
+    """Submit feedback/bug report to GitHub Issues"""
+    data = request.get_json()
+
+    issue_type = data.get('type', 'bug')
+    title = data.get('title', '').strip()
+    description = data.get('description', '').strip()
+    page = data.get('page', 'Unknown')
+    user_agent = data.get('user_agent', '')
+    url = data.get('url', '')
+    screenshot = data.get('screenshot')
+
+    if not title or not description:
+        return jsonify({'error': 'Title and description are required'}), 400
+
+    # Get GitHub config from environment
+    github_token = os.getenv('GITHUB_TOKEN')
+    github_repo = os.getenv('GITHUB_REPO', 'Comptech-Enterprises/bill_matcher_ai')
+
+    if not github_token:
+        return jsonify({'error': 'GitHub integration not configured'}), 500
+
+    # Map issue type to labels
+    label_map = {
+        'bug': 'bug',
+        'feature': 'enhancement',
+        'improvement': 'enhancement',
+        'question': 'question'
+    }
+    labels = [label_map.get(issue_type, 'bug'), 'user-reported']
+
+    # Get current user info
+    current_user = get_current_user()
+    username = current_user.get('username', 'Anonymous') if current_user else 'Anonymous'
+
+    # Upload screenshot if provided
+    screenshot_section = ""
+    print(f"[FEEDBACK] Screenshot received: {bool(screenshot)}, length: {len(screenshot) if screenshot else 0}")
+    if screenshot:
+        print(f"[FEEDBACK] Uploading screenshot to GitHub...")
+        screenshot_url = upload_screenshot_to_github(screenshot, github_token, github_repo)
+        print(f"[FEEDBACK] Screenshot URL: {screenshot_url}")
+        if screenshot_url:
+            screenshot_section = f"""
+## Screenshot
+![Screenshot]({screenshot_url})
+"""
+
+    # Build issue body
+    issue_body = f"""## Description
+{description}
+{screenshot_section}
+## Details
+- **Reported by:** {username}
+- **Page/Section:** {page}
+- **Issue Type:** {issue_type}
+- **URL:** {url}
+
+## Environment
+- **User Agent:** {user_agent}
+
+---
+*This issue was automatically created via the Bill Matcher feedback system.*
+"""
+
+    # Create GitHub issue
+    try:
+        response = requests.post(
+            f'https://api.github.com/repos/{github_repo}/issues',
+            headers={
+                'Authorization': f'token {github_token}',
+                'Accept': 'application/vnd.github.v3+json'
+            },
+            json={
+                'title': f'[{issue_type.upper()}] {title}',
+                'body': issue_body,
+                'labels': labels
+            },
+            timeout=30
+        )
+
+        if response.status_code == 201:
+            issue_data = response.json()
+            return jsonify({
+                'message': 'Issue created successfully',
+                'issue_number': issue_data.get('number'),
+                'issue_url': issue_data.get('html_url')
+            }), 201
+        else:
+            print(f"[FEEDBACK ERROR] GitHub API error: {response.status_code} - {response.text}")
+            return jsonify({'error': 'Failed to create issue on GitHub'}), 500
+
+    except requests.RequestException as e:
+        print(f"[FEEDBACK ERROR] Request failed: {e}")
+        return jsonify({'error': 'Failed to connect to GitHub'}), 500
 
 
 # ==================== Authentication Routes ====================
