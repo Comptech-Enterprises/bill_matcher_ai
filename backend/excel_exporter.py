@@ -120,9 +120,9 @@ class ExcelExporter:
     def _create_matched_items_sheet(self, wb: Workbook, matched_items: List[Dict]):
         """Create sheet for matched items"""
         ws = wb.create_sheet("Matched Items")
-        
+
         headers = [
-            "S.No", "Serial Number", "Item Name", "HSN Code",
+            "S.No", "Serial Number", "Item Name", "HSN Code", "Quantity",
             "Purchase Price", "Sale Price", "Profit/Loss", "Profit/Loss %"
         ]
         
@@ -140,25 +140,26 @@ class ExcelExporter:
             ws.cell(row=row_idx, column=2, value=item.get('serial_number', 'N/A')).border = self.border
             ws.cell(row=row_idx, column=3, value=item.get('item_name', 'Unknown')).border = self.border
             ws.cell(row=row_idx, column=4, value=item.get('hsn_code', 'N/A')).border = self.border
-            
-            purchase_cell = ws.cell(row=row_idx, column=5, value=item.get('purchase_price', 0))
+            ws.cell(row=row_idx, column=5, value=item.get('quantity', 1)).border = self.border
+
+            purchase_cell = ws.cell(row=row_idx, column=6, value=item.get('purchase_price', 0))
             purchase_cell.number_format = self.currency_format
             purchase_cell.border = self.border
-            
-            sale_cell = ws.cell(row=row_idx, column=6, value=item.get('sale_price', 0))
+
+            sale_cell = ws.cell(row=row_idx, column=7, value=item.get('sale_price', 0))
             sale_cell.number_format = self.currency_format
             sale_cell.border = self.border
-            
+
             profit_loss = item.get('profit_loss', 0)
-            pl_cell = ws.cell(row=row_idx, column=7, value=profit_loss)
+            pl_cell = ws.cell(row=row_idx, column=8, value=profit_loss)
             pl_cell.number_format = self.currency_format
             pl_cell.border = self.border
-            
+
             pl_pct = item.get('profit_loss_percentage', 0) / 100
-            pl_pct_cell = ws.cell(row=row_idx, column=8, value=pl_pct)
+            pl_pct_cell = ws.cell(row=row_idx, column=9, value=pl_pct)
             pl_pct_cell.number_format = self.percentage_format
             pl_pct_cell.border = self.border
-            
+
             # Color code based on profit/loss
             if profit_loss > 0:
                 pl_cell.fill = self.profit_fill
@@ -173,8 +174,8 @@ class ExcelExporter:
     def _create_unmatched_purchases_sheet(self, wb: Workbook, unmatched_purchases: List[Dict]):
         """Create sheet for unmatched purchases"""
         ws = wb.create_sheet("Unmatched Purchases")
-        
-        headers = ["S.No", "Serial Number", "Item Name", "HSN Code", "Purchase Price"]
+
+        headers = ["S.No", "Serial Number", "Item Name", "HSN Code", "Quantity", "Purchase Price"]
         
         # Write headers
         for col_idx, header in enumerate(headers, start=1):
@@ -190,20 +191,21 @@ class ExcelExporter:
             ws.cell(row=row_idx, column=2, value=item.get('serial_number', 'N/A')).border = self.border
             ws.cell(row=row_idx, column=3, value=item.get('item_name', 'Unknown')).border = self.border
             ws.cell(row=row_idx, column=4, value=item.get('hsn_code', 'N/A')).border = self.border
-            
-            price_cell = ws.cell(row=row_idx, column=5, value=item.get('purchase_price', 0))
+            ws.cell(row=row_idx, column=5, value=item.get('quantity', 1)).border = self.border
+
+            price_cell = ws.cell(row=row_idx, column=6, value=item.get('purchase_price', 0))
             price_cell.number_format = self.currency_format
             price_cell.border = self.border
             price_cell.fill = self.neutral_fill
-        
+
         # Adjust column widths
         self._auto_adjust_columns(ws)
-    
+
     def _create_unmatched_sales_sheet(self, wb: Workbook, unmatched_sales: List[Dict]):
         """Create sheet for unmatched sales"""
         ws = wb.create_sheet("Unmatched Sales")
-        
-        headers = ["S.No", "Serial Number", "Item Name", "HSN Code", "Sale Price"]
+
+        headers = ["S.No", "Serial Number", "Item Name", "HSN Code", "Quantity", "Sale Price"]
         
         # Write headers
         for col_idx, header in enumerate(headers, start=1):
@@ -219,8 +221,9 @@ class ExcelExporter:
             ws.cell(row=row_idx, column=2, value=item.get('serial_number', 'N/A')).border = self.border
             ws.cell(row=row_idx, column=3, value=item.get('item_name', 'Unknown')).border = self.border
             ws.cell(row=row_idx, column=4, value=item.get('hsn_code', 'N/A')).border = self.border
-            
-            price_cell = ws.cell(row=row_idx, column=5, value=item.get('sale_price', 0))
+            ws.cell(row=row_idx, column=5, value=item.get('quantity', 1)).border = self.border
+
+            price_cell = ws.cell(row=row_idx, column=6, value=item.get('sale_price', 0))
             price_cell.number_format = self.currency_format
             price_cell.border = self.border
             price_cell.fill = self.neutral_fill

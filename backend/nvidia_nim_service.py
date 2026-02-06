@@ -25,16 +25,31 @@ class NvidiaNIMService:
         # Prompt for extracting bill items
         self.extraction_prompt = """Analyze this bill/invoice image and extract ALL items listed.
 
-For each item, extract:
-- serial_number: Product serial number, S.No, or item code (if visible)
-- item_name: Name/description of the product
-- hsn_code: HSN/SAC code (if visible, usually 4-8 digits)
-- price: The price/amount for this item (just the number)
+This could be either:
+1. An ITEMIZED INVOICE with product names, quantities, and prices
+2. A TAX SUMMARY/ANALYSIS document with HSN/SAC codes and taxable values
 
-Return ONLY a JSON array with the items. Example format:
+For each item/row, extract:
+- serial_number: Product serial number, S.No, or item code (if visible)
+- item_name: Name/description of the product (if available, otherwise null)
+- hsn_code: HSN/SAC code (usually 4-8 digits)
+- quantity: The quantity/qty of items (just the number, default to 1 if not visible)
+- price: The price/amount/taxable value for this item (just the number)
+
+For TAX SUMMARY documents: Extract each HSN/SAC row with its Taxable Value as the price.
+
+Return ONLY a JSON array with the items. Example formats:
+
+Itemized invoice:
 [
-  {"serial_number": "SN12345", "item_name": "Samsung TV 55 inch", "hsn_code": "8528", "price": 45000},
-  {"serial_number": null, "item_name": "LG Refrigerator", "hsn_code": "8418", "price": 32000}
+  {"serial_number": "1", "item_name": "Samsung TV 55 inch", "hsn_code": "8528", "quantity": 1, "price": 45000},
+  {"serial_number": "2", "item_name": "LG Refrigerator", "hsn_code": "8418", "quantity": 2, "price": 32000}
+]
+
+Tax summary (HSN-wise):
+[
+  {"serial_number": null, "item_name": null, "hsn_code": "85285200", "quantity": 1, "price": 16101.70},
+  {"serial_number": null, "item_name": null, "hsn_code": "85235100", "quantity": 1, "price": 15254.40}
 ]
 
 If no items are found, return: []
@@ -195,14 +210,22 @@ Return ONLY the JSON array, no other text."""
                         if isinstance(item, dict):
                             # Normalize the item
                             price_key = f'{bill_type}_price'
+                            item_name = item.get('item_name') or item.get('name') or item.get('description') or item.get('product')
+                            hsn_code = str(item.get('hsn_code') or item.get('hsn') or item.get('hsncode') or item.get('hsn_sac') or '')
+
+                            # Use HSN code as fallback for item_name if not available
+                            if not item_name and hsn_code:
+                                item_name = f"HSN: {hsn_code}"
+
                             normalized = {
                                 'serial_number': item.get('serial_number') or item.get('sn') or item.get('serial'),
-                                'item_name': item.get('item_name') or item.get('name') or item.get('description') or item.get('product'),
-                                'hsn_code': str(item.get('hsn_code') or item.get('hsn') or item.get('hsncode') or ''),
-                                price_key: self._parse_price(item.get('price') or item.get('amount') or item.get('value') or 0)
+                                'item_name': item_name,
+                                'hsn_code': hsn_code,
+                                'quantity': self._parse_quantity(item.get('quantity') or item.get('qty') or item.get('units') or 1),
+                                price_key: self._parse_price(item.get('price') or item.get('amount') or item.get('value') or item.get('taxable_value') or 0)
                             }
-                            
-                            # Only add if we have at least a name or price
+
+                            # Only add if we have at least a name/hsn or price
                             if normalized['item_name'] or normalized[price_key]:
                                 items.append(normalized)
             else:
@@ -220,7 +243,7 @@ Return ONLY the JSON array, no other text."""
         """Parse price value to float"""
         if isinstance(price_value, (int, float)):
             return float(price_value)
-        
+
         if isinstance(price_value, str):
             # Remove currency symbols and commas
             cleaned = re.sub(r'[₹$,\s]', '', price_value)
@@ -228,5 +251,41 @@ Return ONLY the JSON array, no other text."""
                 return float(cleaned)
             except ValueError:
                 return 0.0
-        
+
         return 0.0
+
+    def _parse_quantity(self, qty_value):
+        """Parse quantity value to integer"""
+        if isinstance(qty_value, int):
+            return max(1, qty_value)
+
+        if isinstance(qty_value, float):
+            return max(1, int(qty_value))
+
+        if isinstance(qty_value, str):
+            s = qty_value.strip()
+
+            # Handle simple fractions like "1/2"
+            frac_match = re.match(r'^\s*(\d+)\s*/\s*(\d+)\s*$', s)
+            if frac_match:
+                num = int(frac_match.group(1))
+                den = int(frac_match.group(2))
+                if den != 0:
+                    try:
+                        return max(1, int(float(num) / float(den)))
+                    except (ValueError, OverflowError):
+                        return 1
+                return 1
+
+            # Extract the first integer or decimal number from the string
+            num_match = re.search(r'(\d+(?:\.\d+)?)', s)
+            if num_match:
+                num_str = num_match.group(1)
+                try:
+                    return max(1, int(float(num_str)))
+                except ValueError:
+                    return 1
+
+            return 1
+
+        return 1

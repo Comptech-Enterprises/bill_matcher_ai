@@ -115,18 +115,25 @@ class ItemMatcher:
         purchase_price = purchase_item.get('purchase_price', 0)
         sale_price = sale_item.get('sale_price', 0)
         profit_loss = sale_price - purchase_price
-        
+        purchase_qty = purchase_item.get('quantity', 1)
+        sale_qty = sale_item.get('quantity', 1)
+
         matched_item = {
             'serial_number': purchase_item.get('serial_number') or sale_item.get('serial_number', 'N/A'),
             'item_name': purchase_item.get('item_name') or sale_item.get('item_name', 'Unknown'),
             'hsn_code': purchase_item.get('hsn_code') or sale_item.get('hsn_code', 'N/A'),
+            # Preserve both source quantities so mismatches are visible
+            'quantity': sale_qty if sale_qty else purchase_qty,
+            'purchase_quantity': purchase_qty,
+            'sale_quantity': sale_qty,
+            'quantity_mismatch': purchase_qty != sale_qty,
             'purchase_price': purchase_price,
             'sale_price': sale_price,
             'profit_loss': profit_loss,
             'profit_loss_percentage': (profit_loss / purchase_price * 100) if purchase_price > 0 else 0,
             'status': 'matched'
         }
-        
+
         return matched_item
     
     def _create_unmatched_item(self, item: Dict, item_type: str) -> Dict:
@@ -135,13 +142,14 @@ class ItemMatcher:
             'serial_number': item.get('serial_number', 'N/A'),
             'item_name': item.get('item_name', 'Unknown'),
             'hsn_code': item.get('hsn_code', 'N/A'),
+            'quantity': item.get('quantity', 1),
             'purchase_price': item.get('purchase_price', 0) if item_type == 'purchase' else 0,
             'sale_price': item.get('sale_price', 0) if item_type == 'sale' else 0,
             'profit_loss': 0,
             'profit_loss_percentage': 0,
             'status': f'unmatched_{item_type}'
         }
-        
+
         return unmatched_item
     
     def calculate_summary(self, matched_results: Dict) -> Dict:
