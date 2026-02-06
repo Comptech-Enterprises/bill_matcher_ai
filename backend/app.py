@@ -243,14 +243,6 @@ def delete_user(user_id):
     return jsonify({'message': 'User deleted successfully'})
 
 
-# ==================== Health Check (Public) ====================
-
-@app.route('/api/health', methods=['GET'])
-def health_check():
-    """Health check endpoint"""
-    return jsonify({'status': 'healthy', 'message': 'Bill Software API is running'})
-
-
 # ==================== Bill Processing Routes (Protected) ====================
 
 @app.route('/api/session/create', methods=['POST'])

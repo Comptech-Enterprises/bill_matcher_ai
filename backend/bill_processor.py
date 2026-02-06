@@ -22,6 +22,11 @@ class BillProcessor:
             r'(?:total|subtotal)\s*:?\s*(?:rs\.?|₹)?\s*(\d+(?:,\d+)*(?:\.\d{2})?)',
         ]
 
+        self.quantity_patterns = [
+            r'(?:qty|quantity|units?|nos?|pcs?|pieces?)\s*:?\s*(\d+)',
+            r'(\d+)\s*(?:qty|units?|nos?|pcs?|pieces?)',
+        ]
+
     def parse_bill(self, text: str, bill_type: str = 'purchase') -> List[Dict]:
         """
         Parse bill text and extract items
@@ -65,6 +70,11 @@ class BillProcessor:
                 if item_name:
                     current_item['item_name'] = item_name
             
+            # Extract quantity
+            quantity = self._extract_quantity(line)
+            if quantity and 'quantity' not in current_item:
+                current_item['quantity'] = quantity
+
             # Extract price
             price = self._extract_price(line)
             if price and (bill_type + '_price') not in current_item:
@@ -97,6 +107,8 @@ class BillProcessor:
                         header_indices['serial'] = True
                     if 'hsn' in lower_line:
                         header_indices['hsn'] = True
+                    if 'qty' in lower_line or 'quantity' in lower_line or 'units' in lower_line:
+                        header_indices['quantity'] = True
                     if 'price' in lower_line or 'amount' in lower_line or 'rate' in lower_line:
                         header_indices['price'] = True
                 continue
@@ -130,11 +142,18 @@ class BillProcessor:
             if re.match(r'^\d{4,8}$', part):
                 item['hsn_code'] = part
             
+            # Check for quantity (small numbers typically 1-999)
+            if re.match(r'^\d{1,3}$', part) and 'quantity' not in item:
+                qty = int(part)
+                if 1 <= qty <= 999:
+                    item['quantity'] = qty
+                    continue
+
             # Check for price
             price = self._extract_price(part)
             if price:
                 item[bill_type + '_price'] = price
-            
+
             # Check for item name (usually longer text)
             elif len(part) > 3 and not part.isdigit() and 'item_name' not in item:
                 # Avoid storing serial numbers or codes as item names
@@ -164,6 +183,19 @@ class BillProcessor:
             match = re.search(pattern, text, re.IGNORECASE)
             if match:
                 return match.group(1)
+        return None
+
+    def _extract_quantity(self, text: str) -> Optional[int]:
+        """Extract quantity from text"""
+        for pattern in self.quantity_patterns:
+            match = re.search(pattern, text, re.IGNORECASE)
+            if match:
+                try:
+                    qty = int(match.group(1))
+                    if 1 <= qty <= 99999:  # Reasonable quantity range
+                        return qty
+                except ValueError:
+                    continue
         return None
 
     def _extract_item_name(self, text: str) -> Optional[str]:

@@ -694,6 +694,7 @@ function renderItemsList(items, containerId, type) {
             <div class="item-details">
                 <span>S/N: ${item.serial_number || 'N/A'}</span>
                 <span>HSN: ${item.hsn_code || 'N/A'}</span>
+                <span>Qty: ${item.quantity || 1}</span>
                 <span class="item-price">₹${formatNumber(item[priceKey] || 0)}</span>
             </div>
         </div>
@@ -707,6 +708,7 @@ function addItem(type) {
     document.getElementById('modal-serial').value = '';
     document.getElementById('modal-name').value = '';
     document.getElementById('modal-hsn').value = '';
+    document.getElementById('modal-quantity').value = '1';
     document.getElementById('modal-price').value = '';
     elements.addItemModal.classList.remove('hidden');
 }
@@ -721,6 +723,7 @@ async function handleAddItem(e) {
         serial_number: document.getElementById('modal-serial').value || null,
         item_name: document.getElementById('modal-name').value,
         hsn_code: document.getElementById('modal-hsn').value || null,
+        quantity: parseInt(document.getElementById('modal-quantity').value) || 1,
         [priceKey]: parseFloat(document.getElementById('modal-price').value)
     };
 
@@ -762,6 +765,7 @@ function editItem(type, index) {
     document.getElementById('modal-serial').value = item.serial_number || '';
     document.getElementById('modal-name').value = item.item_name || '';
     document.getElementById('modal-hsn').value = item.hsn_code || '';
+    document.getElementById('modal-quantity').value = item.quantity || 1;
     document.getElementById('modal-price').value = item[priceKey] || '';
 
     // Change form to update mode
@@ -780,6 +784,7 @@ async function updateItem(type, index) {
         serial_number: document.getElementById('modal-serial').value || null,
         item_name: document.getElementById('modal-name').value,
         hsn_code: document.getElementById('modal-hsn').value || null,
+        quantity: parseInt(document.getElementById('modal-quantity').value) || 1,
         [priceKey]: parseFloat(document.getElementById('modal-price').value)
     };
 
@@ -926,7 +931,7 @@ function renderMatchedTable(items) {
     const tbody = document.getElementById('matched-items-table');
     
     if (items.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" style="text-align: center;">No matched items</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align: center;">No matched items</td></tr>';
         return;
     }
 
@@ -938,6 +943,7 @@ function renderMatchedTable(items) {
                 <td>${item.serial_number || 'N/A'}</td>
                 <td>${item.item_name || 'Unknown'}</td>
                 <td>${item.hsn_code || 'N/A'}</td>
+                <td>${item.quantity || 1}</td>
                 <td>₹${formatNumber(item.purchase_price)}</td>
                 <td>₹${formatNumber(item.sale_price)}</td>
                 <td class="${profitClass}">${item.profit_loss >= 0 ? '+' : ''}₹${formatNumber(item.profit_loss)}</td>
@@ -949,9 +955,9 @@ function renderMatchedTable(items) {
 
 function renderUnmatchedTable(items, tableId, priceKey) {
     const tbody = document.getElementById(tableId);
-    
+
     if (items.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">No unmatched items</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">No unmatched items</td></tr>';
         return;
     }
 
@@ -961,6 +967,7 @@ function renderUnmatchedTable(items, tableId, priceKey) {
             <td>${item.serial_number || 'N/A'}</td>
             <td>${item.item_name || 'Unknown'}</td>
             <td>${item.hsn_code || 'N/A'}</td>
+            <td>${item.quantity || 1}</td>
             <td>₹${formatNumber(item[priceKey])}</td>
         </tr>
     `).join('');
