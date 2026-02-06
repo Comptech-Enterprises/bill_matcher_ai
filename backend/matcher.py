@@ -122,7 +122,11 @@ class ItemMatcher:
             'serial_number': purchase_item.get('serial_number') or sale_item.get('serial_number', 'N/A'),
             'item_name': purchase_item.get('item_name') or sale_item.get('item_name', 'Unknown'),
             'hsn_code': purchase_item.get('hsn_code') or sale_item.get('hsn_code', 'N/A'),
+            # Preserve both source quantities so mismatches are visible
             'quantity': sale_qty if sale_qty else purchase_qty,
+            'purchase_quantity': purchase_qty,
+            'sale_quantity': sale_qty,
+            'quantity_mismatch': purchase_qty != sale_qty,
             'purchase_price': purchase_price,
             'sale_price': sale_price,
             'profit_loss': profit_loss,

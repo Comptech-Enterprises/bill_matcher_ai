@@ -723,7 +723,7 @@ async function handleAddItem(e) {
         serial_number: document.getElementById('modal-serial').value || null,
         item_name: document.getElementById('modal-name').value,
         hsn_code: document.getElementById('modal-hsn').value || null,
-        quantity: parseInt(document.getElementById('modal-quantity').value) || 1,
+        quantity: Math.max(1, parseInt(document.getElementById('modal-quantity').value, 10) || 1),
         [priceKey]: parseFloat(document.getElementById('modal-price').value)
     };
 
@@ -784,7 +784,7 @@ async function updateItem(type, index) {
         serial_number: document.getElementById('modal-serial').value || null,
         item_name: document.getElementById('modal-name').value,
         hsn_code: document.getElementById('modal-hsn').value || null,
-        quantity: parseInt(document.getElementById('modal-quantity').value) || 1,
+        quantity: Math.max(1, parseInt(document.getElementById('modal-quantity').value, 10) || 1),
         [priceKey]: parseFloat(document.getElementById('modal-price').value)
     };
 

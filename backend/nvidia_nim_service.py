@@ -257,17 +257,35 @@ Return ONLY the JSON array, no other text."""
     def _parse_quantity(self, qty_value):
         """Parse quantity value to integer"""
         if isinstance(qty_value, int):
-            return qty_value
+            return max(1, qty_value)
 
         if isinstance(qty_value, float):
-            return int(qty_value)
+            return max(1, int(qty_value))
 
         if isinstance(qty_value, str):
-            # Remove any non-numeric characters except decimal
-            cleaned = re.sub(r'[^\d.]', '', qty_value)
-            try:
-                return int(float(cleaned)) if cleaned else 1
-            except ValueError:
+            s = qty_value.strip()
+
+            # Handle simple fractions like "1/2"
+            frac_match = re.match(r'^\s*(\d+)\s*/\s*(\d+)\s*$', s)
+            if frac_match:
+                num = int(frac_match.group(1))
+                den = int(frac_match.group(2))
+                if den != 0:
+                    try:
+                        return max(1, int(float(num) / float(den)))
+                    except (ValueError, OverflowError):
+                        return 1
                 return 1
+
+            # Extract the first integer or decimal number from the string
+            num_match = re.search(r'(\d+(?:\.\d+)?)', s)
+            if num_match:
+                num_str = num_match.group(1)
+                try:
+                    return max(1, int(float(num_str)))
+                except ValueError:
+                    return 1
+
+            return 1
 
         return 1

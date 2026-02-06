@@ -115,35 +115,37 @@ class BillProcessor:
             
             # Parse data rows
             if header_found:
-                item = self._parse_table_row(line, bill_type)
+                item = self._parse_table_row(line, bill_type, header_indices)
                 if item and self._is_valid_item(item):
                     items.append(item)
-        
+
         return items
 
-    def _parse_table_row(self, line: str, bill_type: str) -> Optional[Dict]:
+    def _parse_table_row(self, line: str, bill_type: str, header_indices: Dict = None) -> Optional[Dict]:
         """Parse a single table row"""
         item = {}
-        
+        header_indices = header_indices or {}
+
         # Split by multiple spaces or tabs
         parts = re.split(r'\s{2,}|\t', line)
-        
+
         for part in parts:
             part = part.strip()
             if not part:
                 continue
-            
+
             # Check for serial number
             if re.match(r'^[A-Z0-9\-]+$', part) and len(part) <= 15:
                 if 'serial_number' not in item:
                     item['serial_number'] = part
-            
+
             # Check for HSN code
             if re.match(r'^\d{4,8}$', part):
                 item['hsn_code'] = part
-            
-            # Check for quantity (small numbers typically 1-999)
-            if re.match(r'^\d{1,3}$', part) and 'quantity' not in item:
+
+            # Check for quantity only if header indicates quantity column exists
+            # This prevents misclassifying price/amount values as quantity
+            if header_indices.get('quantity') and re.match(r'^\d{1,3}$', part) and 'quantity' not in item:
                 qty = int(part)
                 if 1 <= qty <= 999:
                     item['quantity'] = qty
