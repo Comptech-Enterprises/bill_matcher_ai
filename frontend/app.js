@@ -1131,6 +1131,140 @@ function togglePassword(inputId, button) {
     }
 }
 
+// ==================== Feedback System ====================
+
+let screenshotData = null;
+
+async function openFeedbackModal() {
+    // Capture screenshot before showing modal
+    screenshotData = null;
+    const screenshotPreview = document.getElementById('screenshot-preview');
+    const screenshotLoading = document.getElementById('screenshot-loading');
+
+    screenshotPreview.classList.add('hidden');
+    screenshotLoading.classList.remove('hidden');
+    screenshotLoading.textContent = 'Capturing screenshot...';
+
+    // Show modal first
+    document.getElementById('feedback-modal').classList.remove('hidden');
+    document.getElementById('feedback-title').value = '';
+    document.getElementById('feedback-description').value = '';
+    document.getElementById('feedback-type').value = 'bug';
+    document.getElementById('feedback-page').value = `Step ${state.currentStep} - ${getCurrentStepName()}`;
+    document.getElementById('feedback-error').classList.add('hidden');
+    document.getElementById('feedback-success').classList.add('hidden');
+    document.getElementById('feedback-submit-btn').disabled = false;
+    document.getElementById('include-screenshot').checked = true;
+
+    // Capture screenshot (hide modal temporarily for clean capture)
+    const modal = document.getElementById('feedback-modal');
+    modal.style.visibility = 'hidden';
+
+    try {
+        const canvas = await html2canvas(document.body, {
+            scale: 0.5,  // Reduce size for faster upload
+            useCORS: true,
+            logging: false,
+            ignoreElements: (element) => element.id === 'feedback-modal' || element.id === 'feedback-btn'
+        });
+
+        screenshotData = canvas.toDataURL('image/png');
+        screenshotPreview.src = screenshotData;
+        screenshotPreview.classList.remove('hidden');
+        screenshotLoading.classList.add('hidden');
+    } catch (error) {
+        console.error('Screenshot capture failed:', error);
+        screenshotLoading.textContent = 'Screenshot capture failed';
+        screenshotData = null;
+    }
+
+    modal.style.visibility = 'visible';
+    document.getElementById('feedback-title').focus();
+}
+
+function closeFeedbackModal() {
+    document.getElementById('feedback-modal').classList.add('hidden');
+}
+
+function getCurrentStepName() {
+    const stepNames = {
+        1: 'Upload Bills',
+        2: 'Review Items',
+        3: 'Match & Results'
+    };
+    return stepNames[state.currentStep] || 'Unknown';
+}
+
+// Initialize feedback form handler
+document.addEventListener('DOMContentLoaded', () => {
+    const feedbackForm = document.getElementById('feedback-form');
+    if (feedbackForm) {
+        feedbackForm.addEventListener('submit', handleFeedbackSubmit);
+    }
+});
+
+async function handleFeedbackSubmit(e) {
+    e.preventDefault();
+
+    const issueType = document.getElementById('feedback-type').value;
+    const title = document.getElementById('feedback-title').value.trim();
+    const description = document.getElementById('feedback-description').value.trim();
+    const page = document.getElementById('feedback-page').value;
+    const includeScreenshot = document.getElementById('include-screenshot').checked;
+
+    const errorEl = document.getElementById('feedback-error');
+    const successEl = document.getElementById('feedback-success');
+    const submitBtn = document.getElementById('feedback-submit-btn');
+
+    errorEl.classList.add('hidden');
+    successEl.classList.add('hidden');
+
+    if (!title || !description) {
+        errorEl.textContent = 'Please fill in all required fields';
+        errorEl.classList.remove('hidden');
+        return;
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Submitting...';
+
+    try {
+        const response = await apiRequest('/feedback', {
+            method: 'POST',
+            body: {
+                type: issueType,
+                title: title,
+                description: description,
+                page: page,
+                user_agent: navigator.userAgent,
+                url: window.location.href,
+                screenshot: includeScreenshot && screenshotData ? screenshotData : null
+            }
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.error || 'Failed to submit feedback');
+        }
+
+        successEl.textContent = `Issue created successfully! #${data.issue_number}`;
+        successEl.classList.remove('hidden');
+
+        // Close modal after 2 seconds
+        setTimeout(() => {
+            closeFeedbackModal();
+        }, 2000);
+
+    } catch (error) {
+        errorEl.textContent = error.message;
+        errorEl.classList.remove('hidden');
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Submit Issue';
+    }
+}
+
 // Make functions available globally
 window.togglePassword = togglePassword;
 window.removeFile = removeFile;
@@ -1146,3 +1280,5 @@ window.showAddUserForm = showAddUserForm;
 window.editUser = editUser;
 window.cancelUserForm = cancelUserForm;
 window.deleteUser = deleteUser;
+window.openFeedbackModal = openFeedbackModal;
+window.closeFeedbackModal = closeFeedbackModal;
